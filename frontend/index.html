@@ -1,0 +1,1225 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Daily Drop - Company Central Operations Hub</title>
+  <link rel="stylesheet" href="./shared/styles.css">
+  <style>
+    .portal-launcher {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 20px;
+      margin-bottom: 32px;
+    }
+    @media (max-width: 768px) {
+      .portal-launcher {
+        grid-template-columns: 1fr;
+      }
+    }
+    .launcher-card {
+      background: #1e293b;
+      border: 1px solid #334155;
+      border-radius: 16px;
+      padding: 24px;
+      text-decoration: none;
+      color: white;
+      transition: all 0.2s;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      position: relative;
+      overflow: hidden;
+    }
+    .launcher-card:hover {
+      transform: translateY(-4px);
+      border-color: #f59e0b;
+      box-shadow: 0 12px 24px rgba(245, 158, 11, 0.15);
+    }
+    .launcher-icon {
+      font-size: 2.5rem;
+      margin-bottom: 12px;
+    }
+    .launcher-title {
+      font-size: 1.3rem;
+      font-weight: 700;
+      color: #fff;
+    }
+    .launcher-desc {
+      font-size: 0.85rem;
+      color: #94a3b8;
+      margin-top: 6px;
+    }
+    .table-container {
+      background: #1e293b;
+      border: 1px solid #334155;
+      border-radius: 12px;
+      overflow-x: auto;
+      margin-bottom: 28px;
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      text-align: left;
+    }
+    th, td {
+      padding: 14px 18px;
+      border-bottom: 1px solid #334155;
+      font-size: 0.9rem;
+    }
+    th {
+      background: #111827;
+      color: #94a3b8;
+      text-transform: uppercase;
+      font-size: 0.75rem;
+      letter-spacing: 0.5px;
+    }
+    .status-badge {
+      padding: 4px 10px;
+      border-radius: 999px;
+      font-size: 0.75rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      display: inline-block;
+    }
+    .status-submitted { background: rgba(59, 130, 246, 0.2); color: #60a5fa; border: 1px solid #3b82f6; }
+    .status-approved { background: rgba(245, 158, 11, 0.2); color: #fbbf24; border: 1px solid #f59e0b; }
+    .status-dispatched { background: rgba(168, 85, 247, 0.2); color: #c084fc; border: 1px solid #a855f7; }
+    .status-delivered { background: rgba(16, 185, 129, 0.2); color: #34d399; border: 1px solid #10b981; }
+    .status-rejected { background: rgba(239, 68, 68, 0.2); color: #f87171; border: 1px solid #ef4444; }
+
+    /* Ingestion Center Styles */
+    .ingest-card {
+      background: #131d2e;
+      border: 2px solid #22324e;
+      border-radius: 16px;
+      padding: 24px;
+      margin-bottom: 32px;
+    }
+    .ingest-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 20px;
+      flex-wrap: wrap;
+      gap: 12px;
+    }
+    .ingest-tabs {
+      display: flex;
+      gap: 10px;
+      border-bottom: 2px solid #22324e;
+      margin-bottom: 24px;
+      padding-bottom: 12px;
+      flex-wrap: wrap;
+    }
+    .ingest-tab {
+      background: #1e293b;
+      border: 1px solid #334155;
+      color: #94a3b8;
+      padding: 10px 18px;
+      border-radius: 10px;
+      font-weight: 700;
+      font-size: 0.9rem;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+    .ingest-tab:hover {
+      color: #fff;
+      border-color: #f59e0b;
+    }
+    .ingest-tab.active {
+      background: #d97706;
+      border-color: #f59e0b;
+      color: #fff;
+      box-shadow: 0 4px 12px rgba(245, 158, 11, 0.25);
+    }
+    .form-grid-3 {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 16px;
+      margin-bottom: 16px;
+    }
+    @media (max-width: 860px) {
+      .form-grid-3 {
+        grid-template-columns: 1fr;
+      }
+    }
+    .form-group {
+      margin-bottom: 14px;
+    }
+    label {
+      display: block;
+      font-size: 0.8rem;
+      font-weight: 700;
+      color: #94a3b8;
+      margin-bottom: 6px;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+    input, select, textarea {
+      width: 100%;
+      background: #0f172a;
+      border: 1px solid #334155;
+      color: #fff;
+      font-size: 0.95rem;
+      padding: 10px 14px;
+      border-radius: 8px;
+      outline: none;
+    }
+    input:focus, select:focus, textarea:focus {
+      border-color: #f59e0b;
+    }
+    .drop-zone {
+      border: 2px dashed #3b82f6;
+      background: rgba(59, 130, 246, 0.05);
+      border-radius: 12px;
+      padding: 32px 20px;
+      text-align: center;
+      cursor: pointer;
+      transition: all 0.2s;
+      margin-bottom: 20px;
+    }
+    .drop-zone:hover {
+      background: rgba(59, 130, 246, 0.12);
+      border-color: #60a5fa;
+    }
+    .import-results-card {
+      background: #0f172a;
+      border: 1px solid #10b981;
+      border-radius: 12px;
+      padding: 18px;
+      margin-top: 18px;
+    }
+    .modal {
+      display: none;
+      position: fixed;
+      top: 0; left: 0; right: 0; bottom: 0;
+      background: rgba(0, 0, 0, 0.75);
+      z-index: 1000;
+      align-items: center;
+      justify-content: center;
+      backdrop-filter: blur(4px);
+    }
+    .modal-content {
+      background: #1e293b;
+      border: 1px solid #475569;
+      border-radius: 16px;
+      padding: 24px;
+      max-width: 550px;
+      width: 92%;
+      max-height: 90vh;
+      overflow-y: auto;
+      box-shadow: 0 20px 40px rgba(0, 0, 0, 0.5);
+    }
+  </style>
+</head>
+<body>
+
+  <header>
+    <div class="brand">
+      <span>🏢 Daily Drop</span>
+      <span class="brand-badge">Company Central Operations Hub</span>
+    </div>
+    <div class="nav-links">
+      <span class="nav-link active">🏢 Company Hub</span>
+      <a href="./db-viewer.html" class="nav-link" target="_blank" style="color: #fbbf24; border: 1px solid #d97706;">🗄️ Database Explorer</a>
+    </div>
+  </header>
+
+  <div class="container">
+    <!-- Portal Launchers for evaluation -->
+    <div style="font-size: 1.1rem; font-weight: 700; color: #cbd5e1; margin-bottom: 14px;">
+      🚀 Frontline Application Portals (RBAC Active)
+    </div>
+    <div class="portal-launcher">
+      <a href="./customer/index.html" class="launcher-card" onclick="setActiveRole('customer')">
+        <div>
+          <div class="launcher-icon">☕</div>
+          <div class="launcher-title">Customer Storefront</div>
+          <div class="launcher-desc">
+            Role: <strong>Customer</strong> &bull; Only sees the products page, secret drops, and punch card loyalty.
+          </div>
+        </div>
+        <div style="margin-top: 16px; font-weight: 700; color: #38bdf8; font-size: 0.85rem;">
+          Open Customer View &rarr;
+        </div>
+      </a>
+
+      <a href="./counter/index.html" class="launcher-card" onclick="setActiveRole('shopkeeper')">
+        <div>
+          <div class="launcher-icon">🧑‍🍳</div>
+          <div class="launcher-title">Counter Shopkeeper Tablet</div>
+          <div class="launcher-desc">
+            Role: <strong>Shopkeeper</strong> &bull; Only sees products stocks and product demand based on sales graph.
+          </div>
+        </div>
+        <div style="margin-top: 16px; font-weight: 700; color: #fbbf24; font-size: 0.85rem;">
+          Open Shopkeeper View &rarr;
+        </div>
+      </a>
+
+      <a href="./supplier/index.html" class="launcher-card" onclick="setActiveRole('supplier')">
+        <div>
+          <div class="launcher-icon">🚚</div>
+          <div class="launcher-title">Local Supplier Portal</div>
+          <div class="launcher-desc">
+            Role: <strong>Supplier</strong> &bull; Exclusive access to shopkeeper stock DB, deliver stock, and ask stock from company.
+          </div>
+        </div>
+        <div style="margin-top: 16px; font-weight: 700; color: #34d399; font-size: 0.85rem;">
+          Open Supplier View &rarr;
+        </div>
+      </a>
+    </div>
+
+    <!-- PRODUCT DATA INGESTION CENTER: 2 METHODS (Manual Typing & Products List PDF) -->
+    <div class="ingest-card">
+      <div class="ingest-header">
+        <div>
+          <div style="font-size: 1.35rem; font-weight: 800; color: #fff;">
+            📥 Add Products to Website
+          </div>
+          <div style="font-size: 0.85rem; color: #94a3b8; margin-top: 4px;">
+            Seed data removed! Choose your preferred method to input products into the database.
+          </div>
+        </div>
+        <div style="display: flex; gap: 8px; flex-wrap: wrap;">
+          <a href="/api/catalog/sample-pdf" target="_blank" class="btn" style="background: #1e293b; border: 1px solid #475569; color: #fbbf24; font-size: 0.8rem;">
+            📄 Download Sample Products PDF
+          </a>
+          <button class="btn btn-danger" onclick="confirmClearData()" style="font-size: 0.8rem;">
+            🧹 Reset / Clear All Data
+          </button>
+        </div>
+      </div>
+
+      <!-- Ingestion Mode Tabs -->
+      <div class="ingest-tabs">
+        <button class="ingest-tab active" id="tabManualBtn" onclick="switchIngestTab('manual')">
+          ⌨️ Method 1: Manual Typing
+        </button>
+        <button class="ingest-tab" id="tabPdfBtn" onclick="switchIngestTab('pdf')">
+          📄 Method 2: Products List PDF Upload
+        </button>
+        <button class="ingest-tab" id="tabListBtn" onclick="switchIngestTab('list')">
+          📋 Active Products List (<span id="catalogCount">0</span>)
+        </button>
+      </div>
+
+      <!-- TAB 1: MANUAL TYPING FORM -->
+      <div id="tabManual">
+        <form id="manualProductForm" onsubmit="handleManualProductSubmit(event)">
+          <!-- Row 1: Brand, Type, Form, Size Selectors -->
+          <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 12px; margin-bottom: 14px; background: #0f172a; padding: 14px; border-radius: 12px; border: 1px solid #1e293b;">
+            <div class="form-group" style="margin-bottom: 0;">
+              <label>Drink / Water Brand *</label>
+              <select id="companyBrandSelect" onchange="onCompanyBrandChange()" required>
+                <option value="Pepsi">🥤 Pepsi</option>
+                <option value="7up">🍋 7up</option>
+                <option value="Miranda Orange">🍊 Miranda Orange</option>
+                <option value="Mountain Dew">⚡ Mountain Dew</option>
+                <option value="Sting">⚡ Sting</option>
+                <option value="Slice">🥭 Slice</option>
+                <option value="Aquafina Water">💧 Aquafina Water</option>
+              </select>
+            </div>
+
+            <div class="form-group" style="margin-bottom: 0;">
+              <label>Type / Formula *</label>
+              <select id="companyTypeSelect" onchange="updateCompanyGeneratedName()" required>
+                <option value="Diet">Diet</option>
+                <option value="Zero Sugar">Zero Sugar</option>
+                <option value="Normal">Normal</option>
+              </select>
+            </div>
+
+            <div class="form-group" style="margin-bottom: 0;">
+              <label>Packaging Form *</label>
+              <select id="companyFormSelect" onchange="updateCompanyGeneratedName()" required>
+                <option value="Bottle">Bottle (PET)</option>
+                <option value="Glass bottle">Glass bottle</option>
+              </select>
+            </div>
+
+            <div class="form-group" style="margin-bottom: 0;">
+              <label>Volume / Size *</label>
+              <select id="companySizeSelect" onchange="updateCompanyGeneratedName()" required>
+                <!-- Populated dynamically based on brand -->
+              </select>
+            </div>
+          </div>
+
+          <!-- Row 2: Generated Item Name, Category, Price -->
+          <div class="form-grid-3">
+            <div class="form-group">
+              <label>Drink / Product Name *</label>
+              <input type="text" id="manualName" placeholder="e.g. Pepsi - Diet (Bottle, 500 ml)" required>
+            </div>
+            <div class="form-group">
+              <label>Category *</label>
+              <select id="manualCategory" required>
+                <option value="Carbonated Drinks">🥤 Carbonated Drinks</option>
+                <option value="Energy Drinks">⚡ Energy Drinks</option>
+                <option value="Juice Drinks">🥭 Juice Drinks</option>
+                <option value="Packaged Water">💧 Packaged Water</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label>Price ($ USD) *</label>
+              <input type="number" id="manualPrice" step="0.05" min="0.25" placeholder="e.g. 1.50" value="1.50" required>
+            </div>
+          </div>
+
+          <!-- Row 3: Description, Secret Drop Day, Emoji Icon -->
+          <div class="form-grid-3">
+            <div class="form-group">
+              <label>Description</label>
+              <input type="text" id="manualDesc" placeholder="e.g. Chilled Diet Pepsi in 500 ml PET bottle">
+            </div>
+            <div class="form-group">
+              <label>Secret Drop Day (Optional)</label>
+              <select id="manualDay">
+                <option value="">Everyday (Standard Stock)</option>
+                <option value="1">Sunday Secret Drop</option>
+                <option value="2">Monday Secret Drop</option>
+                <option value="3">Tuesday Secret Drop</option>
+                <option value="4">Wednesday Secret Drop</option>
+                <option value="5">Thursday Secret Drop</option>
+                <option value="6">Friday Secret Drop</option>
+                <option value="7">Saturday Secret Drop</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label>Emoji Icon</label>
+              <select id="manualIcon">
+                <option value="🥤">🥤 Pepsi / Soda Cup</option>
+                <option value="🍋">🍋 7up Lemon-Lime</option>
+                <option value="🍊">🍊 Miranda Orange</option>
+                <option value="⚡">⚡ Mountain Dew / Sting</option>
+                <option value="🥭">🥭 Slice Mango</option>
+                <option value="💧">💧 Aquafina Pure Water</option>
+                <option value="🍾">🍾 Glass Bottle</option>
+              </select>
+            </div>
+          </div>
+
+          <div style="background: #0f172a; padding: 14px; border-radius: 8px; border: 1px solid #334155; margin-bottom: 16px; display: flex; align-items: center; gap: 16px; flex-wrap: wrap;">
+            <label style="display: flex; align-items: center; gap: 8px; margin-bottom: 0; cursor: pointer; text-transform: none; color: #cbd5e1;">
+              <input type="checkbox" id="autoInventoryCheck" checked style="width: auto;">
+              Auto-create linked raw ingredient for Inventory & Stock Tracking
+            </label>
+            <div style="display: flex; align-items: center; gap: 8px;">
+              <span style="font-size: 0.8rem; color: #94a3b8;">Opening Stock:</span>
+              <input type="number" id="manualOpeningStock" value="30.0" step="1" min="0" style="width: 80px; padding: 6px 10px;">
+              <span style="font-size: 0.8rem; color: #94a3b8;">bottles</span>
+            </div>
+          </div>
+
+          <button type="submit" class="btn btn-primary" style="height: 48px; width: 100%; font-size: 1rem;">
+            ➕ Add Product to Website (Save to Database)
+          </button>
+        </form>
+      </div>
+
+      <!-- TAB 2: PRODUCTS LIST PDF UPLOAD -->
+      <div id="tabPdf" style="display: none;">
+        <div style="background: #0f172a; border-radius: 12px; padding: 20px; border: 1px solid #334155; margin-bottom: 18px;">
+          <div style="font-weight: 700; color: #fbbf24; font-size: 1rem; margin-bottom: 6px;">
+            📄 Import Products from a PDF Document
+          </div>
+          <p style="font-size: 0.85rem; color: #cbd5e1; line-height: 1.5; margin-bottom: 14px;">
+            Upload your company's product list, beverage menu, or price sheet in PDF format.
+            Our smart parser automatically identifies drink names, categories, pricing, and descriptions, then imports them directly into the database.
+          </p>
+
+          <form id="pdfUploadForm" onsubmit="handlePdfSubmit(event)">
+            <div class="drop-zone" onclick="document.getElementById('pdfFileInput').click()">
+              <div style="font-size: 2.8rem; margin-bottom: 8px;">📤</div>
+              <div style="font-weight: 700; color: #fff; font-size: 1.05rem;" id="dropZoneText">
+                Click here or Drag & Drop your Products List PDF
+              </div>
+              <div style="font-size: 0.8rem; color: #94a3b8; margin-top: 4px;">
+                Accepts PDF (.pdf) &bull; Table format or text price list
+              </div>
+              <input type="file" id="pdfFileInput" accept=".pdf" style="display: none;" onchange="handleFileSelected(event)" required>
+            </div>
+
+            <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 12px; margin-bottom: 16px;">
+              <label style="display: flex; align-items: center; gap: 8px; margin-bottom: 0; cursor: pointer; text-transform: none; color: #cbd5e1;">
+                <input type="checkbox" id="pdfAutoInventory" checked style="width: auto;">
+                Auto-generate linked inventory ingredients & opening stock (25 units)
+              </label>
+              <a href="/api/catalog/sample-pdf" target="_blank" style="color: #38bdf8; font-size: 0.85rem; text-decoration: underline;">
+                Need a template? Download Sample Products List PDF
+              </a>
+            </div>
+
+            <button type="submit" class="btn btn-success" id="pdfSubmitBtn" style="height: 50px; width: 100%; font-size: 1.05rem;">
+              🚀 Parse & Import PDF Products into Website
+            </button>
+          </form>
+
+          <!-- PDF Import Results Display -->
+          <div id="pdfResultsCard" class="import-results-card" style="display: none;">
+            <div style="font-weight: 700; color: #34d399; font-size: 1rem; margin-bottom: 8px;" id="pdfResultsTitle">
+              ✅ Import Complete
+            </div>
+            <div class="table-container" style="margin-bottom: 0;">
+              <table>
+                <thead>
+                  <tr>
+                    <th>#</th>
+                    <th>Product Name</th>
+                    <th>Category</th>
+                    <th>Price</th>
+                  </tr>
+                </thead>
+                <tbody id="pdfResultsBody"></tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- TAB 3: ACTIVE CATALOG LIST -->
+      <div id="tabList" style="display: none;">
+        <div class="table-container" style="margin-bottom: 0;">
+          <table>
+            <thead>
+              <tr>
+                <th>Drink</th>
+                <th>Category</th>
+                <th>Price</th>
+                <th>Secret Drop Day</th>
+                <th>Description</th>
+                <th>Action</th>
+              </tr>
+            </thead>
+            <tbody id="catalogTableBody">
+              <tr><td colspan="6" style="color: #94a3b8;">Loading catalog...</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- SECTION 1: Supplier Requisition Orders & Company Give/Reject Decision Option -->
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 14px; flex-wrap: wrap; gap: 10px;">
+      <div>
+        <div style="font-size: 1.3rem; font-weight: 700; color: #fff;">
+          📦 Bulk Supplier Requisition Orders (Give or Do Not Give Stock)
+        </div>
+        <div style="font-size: 0.85rem; color: #94a3b8;">
+          Review requisitions asked by suppliers. The company has the option to approve (give stock) or decline (not give).
+        </div>
+      </div>
+      <button class="btn btn-primary" onclick="loadCompanyData()">
+        🔄 Refresh Orders
+      </button>
+    </div>
+
+    <div class="table-container">
+      <table>
+        <thead>
+          <tr>
+            <th>Order #</th>
+            <th>Supplier</th>
+            <th>Item & Quantity Requested</th>
+            <th>Status</th>
+            <th>Requisition Notes</th>
+            <th>Submitted At</th>
+            <th>Company Decision Workflow</th>
+          </tr>
+        </thead>
+        <tbody id="companyOrdersBody">
+          <tr><td colspan="7" style="color: #94a3b8;">Loading supplier requisitions...</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <!-- SECTION 2: Bulk Demand Aggregation Dashboard -->
+    <div style="font-size: 1.25rem; font-weight: 700; color: #fff; margin-bottom: 12px;">
+      🏢 Bulk Demand Summary Across Suppliers
+    </div>
+    <div class="table-container">
+      <table>
+        <thead>
+          <tr>
+            <th>Raw Ingredient</th>
+            <th>Unit</th>
+            <th>Pending Demand</th>
+            <th>Dispatched Demand</th>
+            <th>Delivered Fulfilled</th>
+            <th>Declined / Rejected</th>
+            <th>Total Requisitions</th>
+          </tr>
+        </thead>
+        <tbody id="demandSummaryBody">
+          <tr><td colspan="7" style="color: #94a3b8;">Loading aggregated demand summary...</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <!-- SECTION 3: Company Access to Suppliers Database (Deliveries to Shop) -->
+    <div style="font-size: 1.25rem; font-weight: 700; color: #fff; margin-bottom: 12px;">
+      🚚 Supplier Deliveries Database (Supplier &rarr; Shopkeeper Deliveries)
+    </div>
+    <div class="table-container">
+      <table>
+        <thead>
+          <tr>
+            <th>Delivery #</th>
+            <th>Delivery Date</th>
+            <th>Challan / Invoice #</th>
+            <th>Supplier Name</th>
+            <th>Ingredient Item</th>
+            <th>Quantity Delivered</th>
+            <th>Unit Cost</th>
+            <th>Recorded At</th>
+          </tr>
+        </thead>
+        <tbody id="supplierDeliveriesBody">
+          <tr><td colspan="8" style="color: #94a3b8;">Loading supplier deliveries database...</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- Edit Product Modal (Company Database Management) -->
+  <div class="modal" id="editProductModal">
+    <div class="modal-content">
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
+        <h3 style="color: #fff; margin: 0; font-size: 1.25rem;">✏️ Edit Product in Company Database</h3>
+        <button onclick="closeEditProductModal()" style="background: none; border: none; color: #94a3b8; font-size: 1.5rem; cursor: pointer;">&times;</button>
+      </div>
+
+      <form onsubmit="handleEditProductSubmit(event)">
+        <input type="hidden" id="editProductId">
+
+        <div class="form-group">
+          <label>Product / Drink Name *</label>
+          <input type="text" id="editProductName" required>
+        </div>
+
+        <div class="form-grid-3">
+          <div class="form-group">
+            <label>Category *</label>
+            <select id="editProductCategory" required>
+              <option value="Carbonated Drinks">🥤 Carbonated Drinks</option>
+              <option value="Energy Drinks">⚡ Energy Drinks</option>
+              <option value="Juice Drinks">🥭 Juice Drinks</option>
+              <option value="Packaged Water">💧 Packaged Water</option>
+              <option value="Secret Drop">🌟 Secret Drop</option>
+            </select>
+          </div>
+
+          <div class="form-group">
+            <label>Price ($ USD) *</label>
+            <input type="number" id="editProductPrice" step="0.05" min="0.10" required>
+          </div>
+
+          <div class="form-group">
+            <label>Secret Drop Day</label>
+            <select id="editProductDay">
+              <option value="">Everyday</option>
+              <option value="1">Sunday</option>
+              <option value="2">Monday</option>
+              <option value="3">Tuesday</option>
+              <option value="4">Wednesday</option>
+              <option value="5">Thursday</option>
+              <option value="6">Friday</option>
+              <option value="7">Saturday</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label>Description</label>
+          <input type="text" id="editProductDesc">
+        </div>
+
+        <div style="display: flex; gap: 16px; align-items: center; margin-bottom: 16px;">
+          <div class="form-group" style="margin-bottom: 0;">
+            <label>Emoji Icon</label>
+            <select id="editProductIcon" style="padding: 8px 12px;">
+              <option value="🥤">🥤 Pepsi / Soda</option>
+              <option value="🍋">🍋 7up Lemon</option>
+              <option value="🍊">🍊 Miranda Orange</option>
+              <option value="⚡">⚡ Mountain Dew / Sting</option>
+              <option value="🥭">🥭 Slice Mango</option>
+              <option value="💧">💧 Aquafina Water</option>
+              <option value="🍾">🍾 Glass Bottle</option>
+            </select>
+          </div>
+
+          <div class="form-group" style="margin-bottom: 0; padding-top: 18px;">
+            <label style="display: flex; align-items: center; gap: 8px; cursor: pointer; text-transform: none; color: #cbd5e1;">
+              <input type="checkbox" id="editProductActive" checked style="width: auto;">
+              Active in Storefront Catalog
+            </label>
+          </div>
+        </div>
+
+        <div style="display: flex; justify-content: flex-end; gap: 10px; margin-top: 24px; border-top: 1px solid #334155; padding-top: 16px;">
+          <button type="button" class="btn" onclick="closeEditProductModal()" style="background: #334155; color: #94a3b8;">Cancel</button>
+          <button type="submit" class="btn btn-success" style="background: #10b981; font-weight: 700; color: #fff;">
+            💾 Save Changes to MySQL
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <div id="toast"></div>
+
+  <script src="./shared/rbac.js"></script>
+  <script>
+    initRBAC('company');
+
+    const API_BASE = window.location.port === '8000' 
+      ? '' 
+      : `${window.location.protocol}//${window.location.hostname}:8000`;
+
+    function showToast(msg, isSuccess = true) {
+      const toast = document.getElementById('toast');
+      toast.innerText = msg;
+      toast.style.borderColor = isSuccess ? '#10b981' : '#ef4444';
+      toast.style.display = 'block';
+      setTimeout(() => { toast.style.display = 'none'; }, 3200);
+    }
+
+    // Tab Switching for Data Ingestion
+    function switchIngestTab(tab) {
+      document.getElementById('tabManual').style.display = tab === 'manual' ? 'block' : 'none';
+      document.getElementById('tabPdf').style.display = tab === 'pdf' ? 'block' : 'none';
+      document.getElementById('tabList').style.display = tab === 'list' ? 'block' : 'none';
+
+      document.getElementById('tabManualBtn').className = `ingest-tab ${tab === 'manual' ? 'active' : ''}`;
+      document.getElementById('tabPdfBtn').className = `ingest-tab ${tab === 'pdf' ? 'active' : ''}`;
+      document.getElementById('tabListBtn').className = `ingest-tab ${tab === 'list' ? 'active' : ''}`;
+
+      if (tab === 'list') {
+        loadCatalogList();
+      }
+    }
+
+    const DRINK_SIZES = ['200ml', '250 ml', '400 ml', '500 ml', '600 ml', '1.25 l', '1.75l', '2250 ml'];
+    const WATER_SIZES = ['500 ml', '1000 ml', '1500ml'];
+
+    const BRAND_CONFIG = {
+      'Pepsi': {
+        types: ['Diet', 'Zero Sugar', 'Normal'],
+        forms: ['Bottle', 'Glass bottle'],
+        category: 'Carbonated Drinks',
+        icon: '🥤',
+        defaultPrice: 1.50
+      },
+      '7up': {
+        types: ['Zero Sugar', 'Normal'],
+        forms: ['Bottle', 'Glass bottle'],
+        category: 'Carbonated Drinks',
+        icon: '🍋',
+        defaultPrice: 1.50
+      },
+      'Miranda Orange': {
+        types: ['Normal'],
+        forms: ['Bottle', 'Glass bottle'],
+        category: 'Carbonated Drinks',
+        icon: '🍊',
+        defaultPrice: 1.40
+      },
+      'Mountain Dew': {
+        types: ['Normal'],
+        forms: ['Bottle', 'Glass bottle'],
+        category: 'Carbonated Drinks',
+        icon: '⚡',
+        defaultPrice: 1.35
+      },
+      'Sting': {
+        types: ['Normal'],
+        forms: ['Bottle', 'Glass bottle'],
+        category: 'Energy Drinks',
+        icon: '⚡',
+        defaultPrice: 1.00
+      },
+      'Slice': {
+        types: ['Normal'],
+        forms: ['Bottle', 'Glass bottle'],
+        category: 'Juice Drinks',
+        icon: '🥭',
+        defaultPrice: 1.60
+      },
+      'Aquafina Water': {
+        types: ['Pure Water'],
+        forms: ['Bottle'],
+        category: 'Packaged Water',
+        icon: '💧',
+        defaultPrice: 0.85
+      }
+    };
+
+    function onCompanyBrandChange() {
+      const brand = document.getElementById('companyBrandSelect').value;
+      const config = BRAND_CONFIG[brand] || BRAND_CONFIG['Pepsi'];
+
+      // Populate Types
+      const typeSel = document.getElementById('companyTypeSelect');
+      typeSel.innerHTML = config.types.map(t => `<option value="${t}">${t}</option>`).join('');
+
+      // Populate Forms
+      const formSel = document.getElementById('companyFormSelect');
+      formSel.innerHTML = config.forms.map(f => `<option value="${f}">${f}</option>`).join('');
+
+      // Populate Sizes
+      const sizeSel = document.getElementById('companySizeSelect');
+      const sizes = (brand === 'Aquafina Water') ? WATER_SIZES : DRINK_SIZES;
+      sizeSel.innerHTML = sizes.map(s => `<option value="${s}">${s}</option>`).join('');
+      if (sizes.includes('500 ml')) sizeSel.value = '500 ml';
+
+      // Category & Icon
+      document.getElementById('manualCategory').value = config.category;
+      document.getElementById('manualIcon').value = config.icon;
+      document.getElementById('manualPrice').value = config.defaultPrice.toFixed(2);
+
+      updateCompanyGeneratedName();
+    }
+
+    function updateCompanyGeneratedName() {
+      const brand = document.getElementById('companyBrandSelect').value;
+      const type = document.getElementById('companyTypeSelect').value;
+      const form = document.getElementById('companyFormSelect').value;
+      const size = document.getElementById('companySizeSelect').value;
+
+      let generatedName = '';
+      if (brand === 'Pepsi' || brand === '7up') {
+        generatedName = `${brand} - ${type} (${form}, ${size})`;
+      } else if (brand === 'Aquafina Water') {
+        generatedName = `Aquafina Water (${form}, ${size})`;
+      } else {
+        generatedName = `${brand} (${form}, ${size})`;
+      }
+
+      document.getElementById('manualName').value = generatedName;
+      document.getElementById('manualDesc').value = `Chilled ${brand} in ${form.toLowerCase()} (${size})`;
+
+      // Adjust price by size tier
+      const base = BRAND_CONFIG[brand] ? BRAND_CONFIG[brand].defaultPrice : 1.50;
+      let finalPrice = base;
+      if (size === '200ml' || size === '250 ml') finalPrice = base * 0.85;
+      else if (size === '600 ml' || size === '1000 ml') finalPrice = base * 1.25;
+      else if (size === '1.25 l' || size === '1500ml') finalPrice = base * 1.50;
+      else if (size === '1.75l' || size === '2250 ml') finalPrice = base * 1.85;
+      document.getElementById('manualPrice').value = Math.max(0.50, finalPrice).toFixed(2);
+    }
+
+    // 1. Method 1: Manual Product Form Submit
+    async function handleManualProductSubmit(e) {
+      e.preventDefault();
+      const payload = {
+        name: document.getElementById('manualName').value.trim(),
+        category: document.getElementById('manualCategory').value,
+        price: parseFloat(document.getElementById('manualPrice').value),
+        description: document.getElementById('manualDesc').value.trim(),
+        available_day_of_week: document.getElementById('manualDay').value ? parseInt(document.getElementById('manualDay').value) : null,
+        image_url: document.getElementById('manualIcon').value,
+        auto_create_inventory: document.getElementById('autoInventoryCheck').checked,
+        opening_stock: parseFloat(document.getElementById('manualOpeningStock').value) || 30.0,
+        ingredient_unit: 'bottles'
+      };
+
+      try {
+        const res = await fetch(`${API_BASE}/api/catalog/manual-product`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload)
+        });
+        const data = await res.json();
+        if (res.ok) {
+          showToast(`✅ ${data.message}`);
+          document.getElementById('autoInventoryCheck').checked = true;
+          document.getElementById('manualOpeningStock').value = '30.0';
+          onCompanyBrandChange();
+          loadCatalogCount();
+        } else {
+          showToast(data.detail || 'Failed to add product', false);
+        }
+      } catch (err) {
+        showToast('Network error: ' + err.message, false);
+      }
+    }
+
+    // 2. Method 2: PDF Upload & Parser
+    function handleFileSelected(e) {
+      const file = e.target.files[0];
+      if (file) {
+        document.getElementById('dropZoneText').innerText = `Selected: ${file.name} (${(file.size / 1024).toFixed(1)} KB)`;
+      }
+    }
+
+    async function handlePdfSubmit(e) {
+      e.preventDefault();
+      const fileInput = document.getElementById('pdfFileInput');
+      if (!fileInput.files || fileInput.files.length === 0) {
+        showToast('Please select a PDF file first', false);
+        return;
+      }
+
+      const file = fileInput.files[0];
+      const formData = new FormData();
+      formData.append('file', file);
+      formData.append('auto_create_inventory', document.getElementById('pdfAutoInventory').checked);
+
+      const btn = document.getElementById('pdfSubmitBtn');
+      btn.disabled = true;
+      btn.innerText = '⏳ Parsing & Importing PDF...';
+
+      try {
+        const res = await fetch(`${API_BASE}/api/catalog/upload-pdf`, {
+          method: 'POST',
+          body: formData
+        });
+        const data = await res.json();
+        if (res.ok) {
+          showToast(`🎉 ${data.message}`);
+          // Display results
+          const resultsCard = document.getElementById('pdfResultsCard');
+          resultsCard.style.display = 'block';
+          document.getElementById('pdfResultsTitle').innerText = `✅ Successfully imported ${data.imported_count} products from "${data.filename}"!`;
+          
+          const tbody = document.getElementById('pdfResultsBody');
+          tbody.innerHTML = data.imported_items.map((item, idx) => `
+            <tr>
+              <td>${idx + 1}</td>
+              <td><strong>${item.name}</strong></td>
+              <td><span class="status-badge" style="background: rgba(59, 130, 246, 0.2); color: #60a5fa;">${item.category}</span></td>
+              <td><strong style="color: #34d399;">$${item.price.toFixed(2)}</strong></td>
+            </tr>
+          `).join('');
+
+          loadCatalogCount();
+        } else {
+          showToast(data.detail || 'PDF processing failed', false);
+        }
+      } catch (err) {
+        showToast('Network error: ' + err.message, false);
+      } finally {
+        btn.disabled = false;
+        btn.innerText = '🚀 Parse & Import PDF Products into Website';
+      }
+    }
+
+    // 3. Load Catalog Products for Tab 3 & Support Direct Database Editing
+    let currentCatalogProducts = [];
+
+    function escapeHtml(str) {
+      if (str === null || str === undefined) return '';
+      return String(str)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#039;');
+    }
+
+    async function loadCatalogList() {
+      try {
+        const res = await fetch(`${API_BASE}/api/catalog/products`);
+        const data = await res.json();
+        const tbody = document.getElementById('catalogTableBody');
+        document.getElementById('catalogCount').innerText = data.count;
+        currentCatalogProducts = data.products || [];
+
+        if (data.count === 0) {
+          tbody.innerHTML = '<tr><td colspan="6" style="color: #64748b; text-align: center; padding: 24px;">No products in catalog. Add products through manual typing or upload a PDF above!</td></tr>';
+          return;
+        }
+
+        const days = ['', 'Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+
+        tbody.innerHTML = currentCatalogProducts.map(p => `
+          <tr>
+            <td>
+              <div style="display: flex; align-items: center; gap: 8px;">
+                <span style="font-size: 1.4rem;">${p.image_url || '☕'}</span>
+                <strong>${escapeHtml(p.name)}</strong>
+              </div>
+            </td>
+            <td><span class="status-badge status-submitted">${escapeHtml(p.category)}</span></td>
+            <td><strong style="color: #fbbf24;">$${p.price.toFixed(2)}</strong></td>
+            <td>${p.available_day_of_week ? `<span style="color: #c084fc; font-weight: 700;">${days[p.available_day_of_week]}</span>` : '<span style="color: #64748b;">Everyday</span>'}</td>
+            <td style="color: #94a3b8; font-size: 0.82rem; max-width: 250px;">${escapeHtml(p.description || '-')}</td>
+            <td>
+              <div style="display: flex; gap: 6px;">
+                <button class="btn btn-primary" style="font-size: 0.75rem; padding: 4px 10px; background: #2563eb;" onclick="openEditProductModal(${p.id})">
+                  ✏️ Edit
+                </button>
+                <button class="btn btn-danger" style="font-size: 0.75rem; padding: 4px 10px;" onclick="deleteCatalogItem(${p.id}, '${escapeHtml(p.name)}')">
+                  🗑️ Remove
+                </button>
+              </div>
+            </td>
+          </tr>
+        `).join('');
+      } catch (err) {
+        console.error(err);
+      }
+    }
+
+    function openEditProductModal(id) {
+      const p = currentCatalogProducts.find(item => item.id === id);
+      if (!p) return;
+
+      document.getElementById('editProductId').value = p.id;
+      document.getElementById('editProductName').value = p.name || '';
+      document.getElementById('editProductCategory').value = p.category || 'Carbonated Drinks';
+      document.getElementById('editProductPrice').value = (p.price || 0).toFixed(2);
+      document.getElementById('editProductDay').value = (p.available_day_of_week !== null && p.available_day_of_week !== undefined) ? p.available_day_of_week : '';
+      document.getElementById('editProductDesc').value = p.description || '';
+      document.getElementById('editProductIcon').value = p.image_url || '🥤';
+      document.getElementById('editProductActive').checked = p.is_active !== 0;
+
+      document.getElementById('editProductModal').style.display = 'flex';
+    }
+
+    function closeEditProductModal() {
+      document.getElementById('editProductModal').style.display = 'none';
+    }
+
+    async function handleEditProductSubmit(e) {
+      e.preventDefault();
+      const id = parseInt(document.getElementById('editProductId').value);
+      const payload = {
+        name: document.getElementById('editProductName').value.trim(),
+        category: document.getElementById('editProductCategory').value,
+        price: parseFloat(document.getElementById('editProductPrice').value),
+        description: document.getElementById('editProductDesc').value.trim(),
+        available_day_of_week: document.getElementById('editProductDay').value ? parseInt(document.getElementById('editProductDay').value) : null,
+        image_url: document.getElementById('editProductIcon').value,
+        is_active: document.getElementById('editProductActive').checked
+      };
+
+      try {
+        const res = await fetch(`${API_BASE}/api/catalog/menu-item/${id}`, {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload)
+        });
+        const data = await res.json();
+        if (res.ok) {
+          showToast(`✅ Successfully updated product #${id} in MySQL database!`);
+          closeEditProductModal();
+          loadCatalogList();
+        } else {
+          showToast(data.detail || 'Failed to update product', false);
+        }
+      } catch (err) {
+        showToast('Network error: ' + err.message, false);
+      }
+    }
+
+    async function loadCatalogCount() {
+      try {
+        const res = await fetch(`${API_BASE}/api/catalog/products`);
+        const data = await res.json();
+        document.getElementById('catalogCount').innerText = data.count;
+      } catch (err) {}
+    }
+
+    async function deleteCatalogItem(id, name) {
+      if (!confirm(`Are you sure you want to remove '${name}' from the menu catalog?`)) return;
+      try {
+        const res = await fetch(`${API_BASE}/api/catalog/menu-item/${id}`, { method: 'DELETE' });
+        if (res.ok) {
+          showToast(`Removed '${name}' from catalog`);
+          loadCatalogList();
+        } else {
+          showToast('Failed to delete item', false);
+        }
+      } catch (err) {
+        showToast('Network error: ' + err.message, false);
+      }
+    }
+
+    // Reset / Clear All Data
+    async function confirmClearData() {
+      if (!confirm("⚠️ Are you sure you want to completely remove all data from the website? This will clear menu items, orders, and stock so you can start completely fresh.")) {
+        return;
+      }
+      try {
+        const res = await fetch(`${API_BASE}/api/catalog/clear-data`, { method: 'POST' });
+        const data = await res.json();
+        if (res.ok) {
+          showToast('🧹 All data cleared successfully! Database is completely fresh.');
+          loadCompanyData();
+          loadCatalogCount();
+          switchIngestTab('manual');
+        } else {
+          showToast(data.detail || 'Clear failed', false);
+        }
+      } catch (err) {
+        showToast('Network error: ' + err.message, false);
+      }
+    }
+
+    // Company Data
+    async function loadCompanyData() {
+      loadDemandSummary();
+      loadCompanyOrders();
+      loadSupplierDeliveries();
+      loadCatalogCount();
+    }
+
+    // Demand Summary
+    async function loadDemandSummary() {
+      try {
+        const res = await fetch(`${API_BASE}/api/company/demand-summary`);
+        const data = await res.json();
+        const tbody = document.getElementById('demandSummaryBody');
+        if (!data.demand_summary || data.demand_summary.length === 0) {
+          tbody.innerHTML = '<tr><td colspan="7" style="color: #64748b;">No demand data yet. Add products to get started!</td></tr>';
+          return;
+        }
+
+        tbody.innerHTML = data.demand_summary.map(item => `
+          <tr>
+            <td><strong>${item.item_name}</strong></td>
+            <td>${item.unit}</td>
+            <td><strong style="color: ${item.total_pending_demand > 0 ? '#f59e0b' : '#94a3b8'};">${item.total_pending_demand} ${item.unit}</strong></td>
+            <td><span style="color: #c084fc;">${item.total_dispatched_demand} ${item.unit}</span></td>
+            <td><span style="color: #34d399;">${item.total_fulfilled_demand} ${item.unit}</span></td>
+            <td><span style="color: ${item.total_rejected_demand > 0 ? '#f87171' : '#64748b'};">${item.total_rejected_demand || 0} ${item.unit}</span></td>
+            <td>${item.total_orders_count} orders</td>
+          </tr>
+        `).join('');
+      } catch (err) {
+        console.error(err);
+      }
+    }
+
+    // Company Orders Workflow (With Option to Give or Not Give)
+    async function loadCompanyOrders() {
+      try {
+        const res = await fetch(`${API_BASE}/api/company/orders`);
+        const data = await res.json();
+        const tbody = document.getElementById('companyOrdersBody');
+        if (!data.orders || data.orders.length === 0) {
+          tbody.innerHTML = '<tr><td colspan="7" style="color: #64748b;">No bulk supplier requisitions yet.</td></tr>';
+          return;
+        }
+
+        tbody.innerHTML = data.orders.map(o => {
+          let nextActionBtn = '';
+          if (o.status === 'submitted') {
+            nextActionBtn = `
+              <div style="display: flex; gap: 6px; flex-wrap: wrap;">
+                <button class="btn btn-success" style="font-size: 0.75rem; padding: 5px 10px;" onclick="transitionOrder(${o.id}, 'approved')" title="Give stock to supplier">
+                  ✅ Give Stock (Approve)
+                </button>
+                <button class="btn btn-danger" style="font-size: 0.75rem; padding: 5px 10px;" onclick="transitionOrder(${o.id}, 'rejected')" title="Decline supplier request">
+                  ❌ Do Not Give (Reject)
+                </button>
+              </div>
+            `;
+          } else if (o.status === 'approved') {
+            nextActionBtn = `
+              <div style="display: flex; gap: 6px; flex-wrap: wrap;">
+                <button class="btn btn-primary" style="font-size: 0.75rem; padding: 5px 10px;" onclick="transitionOrder(${o.id}, 'dispatched')">
+                  🚚 Dispatch &rarr;
+                </button>
+                <button class="btn btn-danger" style="font-size: 0.75rem; padding: 5px 10px;" onclick="transitionOrder(${o.id}, 'rejected')">
+                  ❌ Cancel / Reject
+                </button>
+              </div>
+            `;
+          } else if (o.status === 'dispatched') {
+            nextActionBtn = `<button class="btn" style="font-size: 0.75rem; padding: 5px 10px; background: #059669; color: white;" onclick="transitionOrder(${o.id}, 'delivered')">Mark Delivered &rarr;</button>`;
+          } else if (o.status === 'rejected') {
+            nextActionBtn = '<span style="color: #f87171; font-size: 0.8rem; font-weight: 700;">❌ Stock Not Given (Declined)</span>';
+          } else {
+            nextActionBtn = '<span style="color: #34d399; font-size: 0.8rem; font-weight: 700;">✅ Complete</span>';
+          }
+
+          let badgeDisplay = `<span class="status-badge status-${o.status}">${o.status}</span>`;
+          if (o.status === 'rejected') {
+            badgeDisplay = `<span class="status-badge status-rejected">Rejected (Not Given)</span>`;
+          } else if (o.status === 'approved') {
+            badgeDisplay = `<span class="status-badge status-approved">Approved (Giving Stock)</span>`;
+          }
+
+          return `
+            <tr>
+              <td>#${o.id}</td>
+              <td>${o.supplier_name}<br><small style="color: #94a3b8;">${o.supplier_phone}</small></td>
+              <td><strong>${o.requested_quantity} ${o.unit}</strong> of ${o.item_name}</td>
+              <td>${badgeDisplay}</td>
+              <td style="color: #cbd5e1;">${o.requisition_notes || '-'}</td>
+              <td style="color: #94a3b8; font-size: 0.8rem;">${new Date(o.created_at).toLocaleString()}</td>
+              <td>${nextActionBtn}</td>
+            </tr>
+          `;
+        }).join('');
+      } catch (err) {
+        console.error(err);
+      }
+    }
+
+    async function transitionOrder(orderId, newStatus) {
+      const actionText = newStatus === 'approved' 
+        ? 'Giving stock (Approved)' 
+        : newStatus === 'rejected' 
+        ? 'Declining stock (Rejected)' 
+        : `Moving to ${newStatus}`;
+
+      try {
+        const res = await fetch(`${API_BASE}/api/company/orders/${orderId}/status`, {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ status: newStatus })
+        });
+        const data = await res.json();
+        if (res.ok) {
+          showToast(`Order #${orderId}: ${actionText}!`);
+          loadCompanyData();
+        } else {
+          showToast(data.detail || 'Status transition failed', false);
+        }
+      } catch (err) {
+        showToast('Network error: ' + err.message, false);
+      }
+    }
+
+    // Supplier Deliveries Database
+    async function loadSupplierDeliveries() {
+      try {
+        const res = await fetch(`${API_BASE}/api/company/supplier-deliveries`);
+        if (!res.ok) throw new Error('Failed to load supplier deliveries');
+        const data = await res.json();
+        const tbody = document.getElementById('supplierDeliveriesBody');
+
+        if (!data.deliveries || data.deliveries.length === 0) {
+          tbody.innerHTML = '<tr><td colspan="8" style="color: #64748b;">No supplier deliveries logged yet.</td></tr>';
+          return;
+        }
+
+        tbody.innerHTML = data.deliveries.map(d => `
+          <tr>
+            <td>#${d.id}</td>
+            <td><strong>${d.delivery_date}</strong></td>
+            <td><code style="color: #38bdf8;">${d.challan_number}</code></td>
+            <td>${d.supplier_name || 'Local Supplier'}<br><small style="color: #94a3b8;">${d.supplier_phone || ''}</small></td>
+            <td>${d.item_name}</td>
+            <td><strong style="color: #34d399;">+${d.quantity} ${d.unit}</strong></td>
+            <td>$${d.unit_cost.toFixed(2)}</td>
+            <td style="color: #94a3b8; font-size: 0.8rem;">${new Date(d.created_at).toLocaleString()}</td>
+          </tr>
+        `).join('');
+      } catch (err) {
+        console.error('Deliveries error:', err);
+      }
+    }
+
+    onCompanyBrandChange();
+    loadCompanyData();
+  </script>
+</body>
+</html>

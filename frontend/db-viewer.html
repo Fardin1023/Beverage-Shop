@@ -1,0 +1,753 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Daily Drop - Live MySQL Database Explorer</title>
+  <link rel="stylesheet" href="./shared/styles.css">
+  <style>
+    .db-layout {
+      display: grid;
+      grid-template-columns: 260px 1fr;
+      gap: 20px;
+      margin-top: 20px;
+    }
+    @media (max-width: 900px) {
+      .db-layout {
+        grid-template-columns: 1fr;
+      }
+    }
+    .table-list {
+      background: var(--card-bg);
+      border: 1px solid var(--card-border);
+      border-radius: var(--radius);
+      padding: 16px;
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+      max-height: calc(100vh - 160px);
+      overflow-y: auto;
+    }
+    .table-btn {
+      background: transparent;
+      border: 1px solid transparent;
+      color: #94a3b8;
+      padding: 10px 14px;
+      border-radius: 8px;
+      text-align: left;
+      cursor: pointer;
+      font-size: 0.9rem;
+      font-weight: 600;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      transition: all 0.15s;
+    }
+    .table-btn:hover {
+      background: #334155;
+      color: #fff;
+    }
+    .table-btn.active {
+      background: #d97706;
+      color: #fff;
+      border-color: #f59e0b;
+    }
+    .table-badge {
+      background: rgba(0, 0, 0, 0.3);
+      padding: 2px 8px;
+      border-radius: 999px;
+      font-size: 0.75rem;
+    }
+    .main-view {
+      display: flex;
+      flex-direction: column;
+      gap: 20px;
+    }
+    .toolbar {
+      background: var(--card-bg);
+      border: 1px solid var(--card-border);
+      border-radius: var(--radius);
+      padding: 14px 20px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 12px;
+    }
+    .data-table-container {
+      background: var(--card-bg);
+      border: 1px solid var(--card-border);
+      border-radius: var(--radius);
+      overflow-x: auto;
+      max-height: 520px;
+      box-shadow: var(--shadow);
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 0.85rem;
+      font-family: monospace;
+    }
+    th, td {
+      padding: 12px 14px;
+      border-bottom: 1px solid #334155;
+      white-space: nowrap;
+    }
+    th {
+      background: #111827;
+      color: #fbbf24;
+      text-transform: uppercase;
+      font-size: 0.75rem;
+      position: sticky;
+      top: 0;
+      z-index: 2;
+    }
+    tr:hover {
+      background: rgba(255, 255, 255, 0.03);
+    }
+    .query-box {
+      background: var(--card-bg);
+      border: 1px solid var(--card-border);
+      border-radius: var(--radius);
+      padding: 18px;
+    }
+    textarea {
+      width: 100%;
+      background: #0b1120;
+      border: 1px solid #334155;
+      color: #38bdf8;
+      font-family: monospace;
+      padding: 12px;
+      border-radius: 8px;
+      font-size: 0.95rem;
+      resize: vertical;
+      min-height: 80px;
+    }
+    .pulse-dot {
+      display: inline-block;
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: #10b981;
+      margin-right: 6px;
+      animation: pulse 1.5s infinite;
+    }
+    @keyframes pulse {
+      0% { opacity: 1; transform: scale(1); }
+      50% { opacity: 0.4; transform: scale(1.3); }
+      100% { opacity: 1; transform: scale(1); }
+    }
+    .modal {
+      display: none;
+      position: fixed;
+      top: 0; left: 0; right: 0; bottom: 0;
+      background: rgba(0,0,0,0.7);
+      z-index: 999;
+      align-items: center;
+      justify-content: center;
+    }
+    .modal-content {
+      background: #1e293b;
+      border: 1px solid #475569;
+      border-radius: 16px;
+      padding: 24px;
+      max-width: 500px;
+      width: 90%;
+    }
+  </style>
+</head>
+<body>
+
+  <header>
+    <div class="brand">
+      <span>🗄️ Daily Drop</span>
+      <span class="brand-badge">Live MySQL Explorer</span>
+    </div>
+    <div class="nav-links">
+      <a href="./counter/index.html" class="nav-link">Counter Tablet</a>
+      <a href="./supplier/index.html" class="nav-link">Supplier Portal</a>
+      <a href="./customer/index.html" class="nav-link">Customer Storefront</a>
+      <a href="./index.html" class="nav-link">Central Hub</a>
+      <a href="./db-viewer.html" class="nav-link active">Live Database</a>
+    </div>
+  </header>
+
+  <div class="container">
+    <div class="db-layout">
+      <!-- Tables List -->
+      <div class="table-list">
+        <div style="font-size: 0.8rem; font-weight: 700; color: #94a3b8; text-transform: uppercase; margin-bottom: 8px; padding-left: 6px;">
+          MySQL Tables (`daily_drop_db`)
+        </div>
+        <div id="tableButtons">
+          <div style="color: #94a3b8; font-size: 0.85rem; padding: 10px;">Loading tables...</div>
+        </div>
+      </div>
+
+      <!-- Main Table View -->
+      <div class="main-view">
+        <div class="toolbar">
+          <div style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
+            <span style="font-size: 1.3rem; font-weight: 800; color: #fff;" id="currentTableName">shop_stock</span>
+            <span class="brand-badge" id="rowCountBadge">0 rows</span>
+            <button class="btn" id="resetTableBtn" style="display: none; padding: 4px 12px; font-size: 0.8rem; background: #2563eb; color: #fff;" onclick="resetToFullTable()">
+              ✖️ Clear Query & View Full Table
+            </button>
+          </div>
+
+          <div style="display: flex; gap: 10px; align-items: center;">
+            <label style="display: flex; align-items: center; gap: 6px; font-size: 0.85rem; color: #cbd5e1; cursor: pointer;">
+              <span class="pulse-dot" id="pulseDot"></span>
+              Auto-Refresh:
+              <select id="refreshInterval" onchange="changeInterval()" style="background: #0f172a; color: #fff; padding: 4px 8px; border-radius: 6px; border: 1px solid #334155;">
+                <option value="1000">Every 1 sec</option>
+                <option value="2000" selected>Every 2 secs</option>
+                <option value="5000">Every 5 secs</option>
+                <option value="0">Manual only</option>
+              </select>
+            </label>
+
+            <button class="btn btn-primary" onclick="refreshCurrentTable()">
+              🔄 Refresh
+            </button>
+
+            <button class="btn btn-success" onclick="openCatalogModal()">
+              ➕ Customize Shop Catalog
+            </button>
+          </div>
+        </div>
+
+        <!-- Custom SQL Query Box (Above Table for Immediate Visibility) -->
+        <div class="query-box">
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+            <div style="display: flex; align-items: center; gap: 8px;">
+              <span style="font-weight: 800; color: #f59e0b; font-size: 1rem;">⚡ Custom SQL Query Console</span>
+              <span style="font-size: 0.75rem; color: #94a3b8; background: #0f172a; padding: 2px 8px; border-radius: 4px; border: 1px solid #334155;">Direct MySQL Engine</span>
+            </div>
+            <span style="font-size: 0.75rem; color: #64748b;">Shortcuts: <kbd style="background: #0f172a; padding: 2px 6px; border-radius: 4px; border: 1px solid #334155; color: #38bdf8;">Ctrl + Enter</kbd> to execute</span>
+          </div>
+
+          <textarea id="sqlInput" placeholder="Enter SQL query, e.g. SELECT * FROM menu_items WHERE category = 'Carbonated Drinks';"></textarea>
+
+          <div style="display: flex; justify-content: space-between; align-items: center; gap: 10px; margin-top: 10px; flex-wrap: wrap;">
+            <div style="display: flex; gap: 6px; flex-wrap: wrap;">
+              <button class="btn" style="font-size: 0.75rem; padding: 4px 8px;" onclick="setAndRunQuery('SELECT * FROM shop_stock;')">⚡ Stock</button>
+              <button class="btn" style="font-size: 0.75rem; padding: 4px 8px;" onclick="setAndRunQuery('SELECT id, name, category, price, is_active FROM menu_items;')">⚡ Menu</button>
+              <button class="btn" style="font-size: 0.75rem; padding: 4px 8px;" onclick="setAndRunQuery('SELECT o.id, o.pickup_token, o.total_amount, oi.menu_item_id, oi.quantity, o.created_at FROM orders o JOIN order_items oi ON o.id = oi.order_id ORDER BY o.id DESC LIMIT 10;')">⚡ Recent Orders</button>
+              <button class="btn" style="font-size: 0.75rem; padding: 4px 8px;" onclick="setAndRunQuery('SELECT s.id, i.name, s.current_quantity, i.unit, i.low_stock_threshold FROM shop_stock s JOIN inventory_items i ON s.inventory_item_id = i.id WHERE s.current_quantity <= i.low_stock_threshold;')">⚠️ Low Stock</button>
+            </div>
+            <div style="display: flex; gap: 8px;">
+              <button class="btn" onclick="clearQueryInput()" style="background: #334155; color: #94a3b8;">Clear</button>
+              <button class="btn btn-primary" onclick="executeCustomSql()" style="font-weight: 700; background: #f59e0b; color: #000;">
+                ⚡ Execute Query
+              </button>
+            </div>
+          </div>
+          <div id="queryResult" style="margin-top: 10px; font-size: 0.85rem; font-family: monospace;"></div>
+        </div>
+
+        <!-- Data Table Output (Displays Strictly Related Records) -->
+        <div class="data-table-container">
+          <table id="dataTable">
+            <thead>
+              <tr id="tableHeaders">
+                <th>Columns</th>
+              </tr>
+            </thead>
+            <tbody id="tableBody">
+              <tr><td>Loading table records...</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Custom Catalog Modal -->
+  <div class="modal" id="catalogModal">
+    <div class="modal-content">
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
+        <h3 style="color: #fff;">➕ Add New Custom Drink</h3>
+        <button onclick="closeCatalogModal()" style="background: none; border: none; color: #94a3b8; font-size: 1.5rem; cursor: pointer;">&times;</button>
+      </div>
+
+      <form onsubmit="handleCustomDrinkSubmit(event)">
+        <div style="margin-bottom: 12px;">
+          <label style="display: block; font-size: 0.8rem; color: #94a3b8; margin-bottom: 4px;">Drink Name</label>
+          <input type="text" id="newDrinkName" placeholder="e.g. Vanilla Cold Foam Matcha" required style="width: 100%; padding: 8px; background: #0f172a; border: 1px solid #334155; color: #fff; border-radius: 6px;">
+        </div>
+
+        <div style="margin-bottom: 12px;">
+          <label style="display: block; font-size: 0.8rem; color: #94a3b8; margin-bottom: 4px;">Category</label>
+          <select id="newDrinkCategory" style="width: 100%; padding: 8px; background: #0f172a; border: 1px solid #334155; color: #fff; border-radius: 6px;">
+            <option value="Coffee">Coffee</option>
+            <option value="Tea">Tea</option>
+            <option value="Specialty">Specialty</option>
+            <option value="Secret Drop">Secret Drop</option>
+          </select>
+        </div>
+
+        <div style="margin-bottom: 12px;">
+          <label style="display: block; font-size: 0.8rem; color: #94a3b8; margin-bottom: 4px;">Price ($)</label>
+          <input type="number" step="0.25" id="newDrinkPrice" value="5.50" required style="width: 100%; padding: 8px; background: #0f172a; border: 1px solid #334155; color: #fff; border-radius: 6px;">
+        </div>
+
+        <div style="margin-bottom: 12px;">
+          <label style="display: block; font-size: 0.8rem; color: #94a3b8; margin-bottom: 4px;">Emoji Icon</label>
+          <input type="text" id="newDrinkIcon" value="🍵" style="width: 100%; padding: 8px; background: #0f172a; border: 1px solid #334155; color: #fff; border-radius: 6px;">
+        </div>
+
+        <div style="margin-bottom: 16px;">
+          <label style="display: block; font-size: 0.8rem; color: #94a3b8; margin-bottom: 4px;">Description</label>
+          <input type="text" id="newDrinkDesc" placeholder="Freshly crafted in-house daily" style="width: 100%; padding: 8px; background: #0f172a; border: 1px solid #334155; color: #fff; border-radius: 6px;">
+        </div>
+
+        <button type="submit" class="btn btn-primary" style="width: 100%;">
+          Save Drink Directly to MySQL
+        </button>
+      </form>
+    </div>
+  </div>
+
+  <!-- Edit Table Row Modal (Direct Company Database Editing) -->
+  <div class="modal" id="editRowModal">
+    <div class="modal-content" style="max-width: 580px;">
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
+        <div>
+          <h3 style="color: #fff; margin: 0; font-size: 1.25rem;">✏️ Edit Database Record</h3>
+          <div style="font-size: 0.8rem; color: #94a3b8; margin-top: 2px;" id="editRowSubtitle">
+            Table: shop_stock &bull; ID #1
+          </div>
+        </div>
+        <button onclick="closeEditRowModal()" style="background: none; border: none; color: #94a3b8; font-size: 1.5rem; cursor: pointer;">&times;</button>
+      </div>
+
+      <form id="editRowForm" onsubmit="handleEditRowSubmit(event)">
+        <div id="editRowFieldsContainer" style="display: flex; flex-direction: column; gap: 12px; max-height: 55vh; overflow-y: auto; padding-right: 6px;">
+          <!-- Dynamically generated column input controls -->
+        </div>
+
+        <div style="display: flex; justify-content: flex-end; gap: 10px; margin-top: 20px; border-top: 1px solid #334155; padding-top: 14px;">
+          <button type="button" class="btn" onclick="closeEditRowModal()" style="background: #334155; color: #94a3b8;">Cancel</button>
+          <button type="submit" class="btn btn-success" style="background: #10b981; font-weight: 700; color: #fff;">
+            💾 Save Changes to MySQL
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <div id="toast"></div>
+
+  <script>
+    const API_BASE = window.location.port === '8000' 
+      ? '' 
+      : `${window.location.protocol}//${window.location.hostname}:8000`;
+
+    let selectedTable = 'shop_stock';
+    let autoRefreshTimer = null;
+    let isCustomQueryMode = false;
+    let lastCustomQuery = '';
+    let currentTableRows = [];
+    let currentTableColumns = [];
+
+    function escapeHtml(str) {
+      if (str === null || str === undefined) return '';
+      return String(str)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#039;');
+    }
+
+    function showToast(msg, isSuccess = true) {
+      const toast = document.getElementById('toast');
+      toast.innerText = msg;
+      toast.style.borderColor = isSuccess ? '#10b981' : '#ef4444';
+      toast.style.display = 'block';
+      setTimeout(() => { toast.style.display = 'none'; }, 2800);
+    }
+
+    async function loadTableList() {
+      try {
+        const res = await fetch(`${API_BASE}/api/db/tables`);
+        const data = await res.json();
+        const container = document.getElementById('tableButtons');
+        container.innerHTML = data.tables.map(t => `
+          <button class="table-btn ${(!isCustomQueryMode && t.table_name === selectedTable) ? 'active' : ''}" onclick="selectTable('${t.table_name}')">
+            <span>${t.table_name}</span>
+            <span class="table-badge">${t.exact_rows}</span>
+          </button>
+        `).join('');
+      } catch (err) {
+        console.error(err);
+      }
+    }
+
+    function resetToFullTable() {
+      isCustomQueryMode = false;
+      lastCustomQuery = '';
+      document.getElementById('resetTableBtn').style.display = 'none';
+      document.getElementById('currentTableName').innerText = selectedTable;
+      document.getElementById('queryResult').innerText = '';
+      document.getElementById('sqlInput').value = `SELECT * FROM ${selectedTable};`;
+      loadTableList();
+      refreshCurrentTable();
+      showToast(`Showing full table: ${selectedTable}`);
+    }
+
+    async function selectTable(tableName) {
+      isCustomQueryMode = false;
+      lastCustomQuery = '';
+      selectedTable = tableName;
+      document.getElementById('resetTableBtn').style.display = 'none';
+      document.getElementById('currentTableName').innerText = tableName;
+      document.getElementById('queryResult').innerText = '';
+      document.getElementById('sqlInput').value = `SELECT * FROM ${tableName};`;
+      loadTableList();
+      refreshCurrentTable();
+    }
+
+    async function refreshCurrentTable() {
+      // If custom query is active, refresh the exact custom query, not the default table
+      if (isCustomQueryMode && lastCustomQuery) {
+        await executeCustomSql(lastCustomQuery, true);
+        return;
+      }
+
+      try {
+        const res = await fetch(`${API_BASE}/api/db/table/${selectedTable}?limit=100`);
+        const data = await res.json();
+
+        document.getElementById('rowCountBadge').innerText = `${data.total_rows} live rows`;
+        document.getElementById('currentTableName').innerText = selectedTable;
+        document.getElementById('resetTableBtn').style.display = 'none';
+
+        currentTableRows = data.rows || [];
+        currentTableColumns = data.columns || [];
+
+        // Render headers with Action column for editing
+        const thead = document.getElementById('tableHeaders');
+        if (data.columns && data.columns.length > 0) {
+          thead.innerHTML = data.columns.map(c => `<th>${escapeHtml(c.COLUMN_NAME)}</th>`).join('') + `<th>Action</th>`;
+        }
+
+        // Render rows
+        const tbody = document.getElementById('tableBody');
+        if (!data.rows || data.rows.length === 0) {
+          tbody.innerHTML = `<tr><td colspan="${(data.columns ? data.columns.length : 1) + 1}" style="text-align: center; color: #64748b; padding: 24px;">Table is currently empty.</td></tr>`;
+          return;
+        }
+
+        tbody.innerHTML = data.rows.map((row, idx) => {
+          return `<tr>` + data.columns.map(c => {
+            let val = row[c.COLUMN_NAME];
+            if (val === null || val === undefined) {
+              val = '<span style="color: #64748b; font-style: italic;">NULL</span>';
+            } else {
+              val = escapeHtml(String(val));
+              if (c.COLUMN_NAME === 'current_quantity') {
+                val = `<strong style="color: #34d399;">${val}</strong>`;
+              }
+            }
+            return `<td>${val}</td>`;
+          }).join('') + `
+            <td style="white-space: nowrap;">
+              <button class="btn btn-primary" style="font-size: 0.72rem; padding: 3px 8px; background: #2563eb;" onclick="openEditRowModal(${idx})">
+                ✏️ Edit
+              </button>
+            </td>
+          </tr>`;
+        }).join('');
+
+      } catch (err) {
+        console.error(err);
+      }
+    }
+
+    function openEditRowModal(idx) {
+      const row = currentTableRows[idx];
+      if (!row) return;
+
+      const pkColObj = currentTableColumns.find(c => c.COLUMN_KEY === 'PRI');
+      const pkCol = pkColObj ? pkColObj.COLUMN_NAME : (currentTableColumns.find(c => c.COLUMN_NAME === 'id') ? 'id' : currentTableColumns[0].COLUMN_NAME);
+      const pkVal = row[pkCol];
+
+      document.getElementById('editRowSubtitle').innerHTML = `Table: <strong style="color: #38bdf8;">${selectedTable}</strong> &bull; Primary Key (<strong style="color: #fbbf24;">${pkCol}</strong>): <strong>${pkVal}</strong>`;
+
+      const container = document.getElementById('editRowFieldsContainer');
+      container.innerHTML = currentTableColumns.map(c => {
+        const colName = c.COLUMN_NAME;
+        const val = row[colName] !== null && row[colName] !== undefined ? row[colName] : '';
+        const isPk = (colName === pkCol);
+        const isReadonly = isPk || colName === 'created_at' || colName === 'updated_at';
+
+        return `
+          <div style="background: #0f172a; padding: 10px 12px; border-radius: 8px; border: 1px solid #1e293b;">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px;">
+              <label style="font-size: 0.75rem; color: #94a3b8; margin-bottom: 0; text-transform: uppercase;">
+                ${escapeHtml(colName)} ${isPk ? '<span style="color: #fbbf24; font-size: 0.7rem;">(PRIMARY KEY)</span>' : ''}
+              </label>
+              <span style="font-size: 0.7rem; color: #64748b;">${escapeHtml(c.COLUMN_TYPE || '')}</span>
+            </div>
+            <input type="text" 
+                   data-column="${escapeHtml(colName)}" 
+                   value="${escapeHtml(String(val))}" 
+                   ${isReadonly ? 'readonly style="background: #1e293b; color: #94a3b8; cursor: not-allowed; border-color: #334155;"' : 'style="background: #0b1120; color: #fff; border-color: #38bdf8;"'}
+            >
+          </div>
+        `;
+      }).join('');
+
+      const modal = document.getElementById('editRowModal');
+      modal.dataset.pkCol = pkCol;
+      modal.dataset.pkVal = pkVal;
+      modal.style.display = 'flex';
+    }
+
+    function closeEditRowModal() {
+      document.getElementById('editRowModal').style.display = 'none';
+    }
+
+    async function handleEditRowSubmit(e) {
+      e.preventDefault();
+      const modal = document.getElementById('editRowModal');
+      const pkCol = modal.dataset.pkCol;
+      const pkVal = modal.dataset.pkVal;
+      if (!pkCol || !pkVal) return;
+
+      const inputs = document.querySelectorAll('#editRowFieldsContainer input[data-column]');
+      const updatedFields = {};
+
+      inputs.forEach(input => {
+        const col = input.getAttribute('data-column');
+        if (col !== pkCol && col !== 'created_at' && col !== 'updated_at') {
+          let val = input.value;
+          if (val === '' && input.placeholder === 'NULL') {
+            val = null;
+          }
+          updatedFields[col] = val;
+        }
+      });
+
+      try {
+        const res = await fetch(`${API_BASE}/api/db/update-row`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            table_name: selectedTable,
+            primary_key_column: pkCol,
+            primary_key_value: pkVal,
+            updated_fields: updatedFields
+          })
+        });
+        const data = await res.json();
+        if (res.ok) {
+          showToast(`✅ Record #${pkVal} in '${selectedTable}' updated in MySQL!`);
+          closeEditRowModal();
+          refreshCurrentTable();
+          loadTableList();
+        } else {
+          showToast(data.detail || 'Failed to update record', false);
+        }
+      } catch (err) {
+        showToast('Network error: ' + err.message, false);
+      }
+    }
+
+    function setQuery(sql) {
+      document.getElementById('sqlInput').value = sql;
+    }
+
+    function setAndRunQuery(sql) {
+      document.getElementById('sqlInput').value = sql;
+      executeCustomSql(sql, false);
+    }
+
+    function clearQueryInput() {
+      document.getElementById('sqlInput').value = '';
+      document.getElementById('queryResult').innerText = '';
+      if (isCustomQueryMode) {
+        resetToFullTable();
+      }
+    }
+
+    async function executeCustomSql(queryToRun = null, silent = false) {
+      const sql = (queryToRun !== null ? queryToRun : document.getElementById('sqlInput').value).trim();
+      if (!sql) {
+        if (!silent) showToast('Please enter an SQL query to execute.', false);
+        return;
+      }
+
+      const resDiv = document.getElementById('queryResult');
+      const thead = document.getElementById('tableHeaders');
+      const tbody = document.getElementById('tableBody');
+
+      try {
+        const res = await fetch(`${API_BASE}/api/db/query`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ query: sql })
+        });
+        const data = await res.json();
+
+        if (res.ok) {
+          if (data.type === 'SELECT') {
+            isCustomQueryMode = true;
+            lastCustomQuery = sql;
+
+            document.getElementById('resetTableBtn').style.display = 'inline-flex';
+            document.getElementById('currentTableName').innerHTML = `<span>⚡ Query Result:</span> <code style="font-size: 0.85rem; color: #38bdf8; background: #0f172a; padding: 2px 8px; border-radius: 4px; border: 1px solid #334155;">${escapeHtml(sql)}</code>`;
+            document.getElementById('rowCountBadge').innerText = `${data.affected_rows} rows returned`;
+
+            // Un-highlight sidebar table buttons
+            document.querySelectorAll('.table-btn').forEach(b => b.classList.remove('active'));
+
+            resDiv.innerHTML = `<span style="color: #34d399; font-weight: 700;">✅ Query executed: Returned ${data.affected_rows} strictly matching rows.</span>`;
+            if (!silent) showToast(`Returned ${data.affected_rows} matching records`);
+
+            // 1. Render STRICTLY the columns returned by the query
+            if (data.columns && data.columns.length > 0) {
+              thead.innerHTML = data.columns.map(c => `<th>${escapeHtml(c)}</th>`).join('');
+            } else {
+              thead.innerHTML = `<th>Results</th>`;
+            }
+
+            // 2. Render STRICTLY the rows returned by the query
+            const rowsToRender = data.raw_rows || data.rows || [];
+            if (rowsToRender.length === 0) {
+              const colSpan = data.columns ? Math.max(data.columns.length, 1) : 1;
+              tbody.innerHTML = `<tr><td colspan="${colSpan}" style="text-align: center; color: #f59e0b; padding: 28px; font-size: 0.95rem;">
+                🔍 <strong>No matching records found</strong> for this query.<br>
+                <code style="font-size: 0.8rem; color: #94a3b8; display: inline-block; margin-top: 6px;">${escapeHtml(sql)}</code>
+              </td></tr>`;
+            } else {
+              tbody.innerHTML = rowsToRender.map(row => {
+                // Support both indexed array (raw_rows) and dict (rows)
+                let cellsHtml = '';
+                if (Array.isArray(row)) {
+                  cellsHtml = row.map(val => {
+                    if (val === null || val === undefined) {
+                      return `<td style="color: #64748b; font-style: italic;">NULL</td>`;
+                    }
+                    return `<td>${escapeHtml(String(val))}</td>`;
+                  }).join('');
+                } else {
+                  cellsHtml = data.columns.map(c => {
+                    let val = row[c];
+                    if (val === null || val === undefined) {
+                      return `<td style="color: #64748b; font-style: italic;">NULL</td>`;
+                    }
+                    return `<td>${escapeHtml(String(val))}</td>`;
+                  }).join('');
+                }
+                return `<tr>${cellsHtml}</tr>`;
+              }).join('');
+            }
+
+            if (!silent) {
+              document.querySelector('.data-table-container').scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+            }
+          } else {
+            // Mutation query (INSERT, UPDATE, DELETE)
+            resDiv.innerHTML = `<span style="color: #34d399; font-weight: 700;">✅ Mutation executed: ${data.affected_rows} row(s) affected. (Last ID: ${data.last_insert_id || 'N/A'})</span>`;
+            if (!silent) showToast(`Mutation successful (${data.affected_rows} rows affected)`);
+            loadTableList();
+          }
+        } else {
+          // SQL execution error
+          const errDetail = data.detail || 'Execution error';
+          resDiv.innerHTML = `<span style="color: #ef4444; font-weight: 700;">❌ Query Error: ${escapeHtml(errDetail)}</span>`;
+          if (!silent) {
+            showToast('Query error: ' + errDetail, false);
+            thead.innerHTML = `<th>Error</th>`;
+            tbody.innerHTML = `<tr><td style="color: #ef4444; padding: 24px; text-align: center;">
+              ⚠️ <strong>MySQL Execution Error:</strong> ${escapeHtml(errDetail)}<br>
+              <code style="font-size: 0.8rem; color: #94a3b8; display: inline-block; margin-top: 6px;">${escapeHtml(sql)}</code>
+            </td></tr>`;
+            document.getElementById('rowCountBadge').innerText = `Error`;
+          }
+        }
+      } catch (err) {
+        resDiv.innerHTML = `<span style="color: #ef4444; font-weight: 700;">❌ Network Error: ${escapeHtml(err.message)}</span>`;
+        if (!silent) showToast('Network error: ' + err.message, false);
+      }
+    }
+
+    // Keyboard shortcut for executing query: Ctrl+Enter or Cmd+Enter
+    document.addEventListener('DOMContentLoaded', () => {
+      const sqlTextarea = document.getElementById('sqlInput');
+      if (sqlTextarea) {
+        sqlTextarea.addEventListener('keydown', (e) => {
+          if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') {
+            e.preventDefault();
+            executeCustomSql();
+          }
+        });
+      }
+    });
+
+    function changeInterval() {
+      const ms = parseInt(document.getElementById('refreshInterval').value);
+      if (autoRefreshTimer) clearInterval(autoRefreshTimer);
+      const dot = document.getElementById('pulseDot');
+
+      if (ms > 0) {
+        dot.style.display = 'inline-block';
+        autoRefreshTimer = setInterval(() => {
+          refreshCurrentTable();
+          loadTableList();
+        }, ms);
+      } else {
+        dot.style.display = 'none';
+      }
+    }
+
+    function openCatalogModal() {
+      document.getElementById('catalogModal').style.display = 'flex';
+    }
+    function closeCatalogModal() {
+      document.getElementById('catalogModal').style.display = 'none';
+    }
+
+    async function handleCustomDrinkSubmit(e) {
+      e.preventDefault();
+      const payload = {
+        name: document.getElementById('newDrinkName').value,
+        category: document.getElementById('newDrinkCategory').value,
+        price: parseFloat(document.getElementById('newDrinkPrice').value),
+        image_url: document.getElementById('newDrinkIcon').value,
+        description: document.getElementById('newDrinkDesc').value
+      };
+
+      try {
+        const res = await fetch(`${API_BASE}/api/catalog/menu-item`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload)
+        });
+        const data = await res.json();
+        if (res.ok) {
+          showToast(`✅ ${data.message}`);
+          closeCatalogModal();
+          selectTable('menu_items');
+        } else {
+          showToast(data.detail || 'Failed to add drink', false);
+        }
+      } catch (err) {
+        showToast('Network error: ' + err.message, false);
+      }
+    }
+
+    // Initialize
+    loadTableList();
+    refreshCurrentTable();
+    changeInterval();
+  </script>
+  <script src="./shared/rbac.js"></script>
+  <script>
+    initRBAC('company');
+  </script>
+</body>
+</html>

@@ -1,0 +1,636 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Daily Drop - Customer Storefront & Punch Card</title>
+  <link rel="stylesheet" href="../shared/styles.css">
+  <style>
+    .store-container {
+      max-width: 600px;
+      margin: 0 auto;
+      padding: 16px;
+    }
+    .phone-bar {
+      display: flex;
+      gap: 8px;
+      margin-bottom: 24px;
+    }
+    .phone-input {
+      flex: 1;
+      font-size: 1.1rem;
+      padding: 14px 18px;
+      border-radius: 12px;
+      background: #1e293b;
+      border: 2px solid #3b82f6;
+      color: #fff;
+    }
+    
+    /* 3D Flip Card Effect */
+    .flip-card-container {
+      perspective: 1000px;
+      width: 100%;
+      height: 220px;
+      margin-bottom: 28px;
+    }
+    .flip-card-inner {
+      position: relative;
+      width: 100%;
+      height: 100%;
+      text-align: center;
+      transition: transform 0.8s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+      transform-style: preserve-3d;
+    }
+    .flip-card-inner.flipped {
+      transform: rotateY(180deg);
+    }
+    .flip-card-front, .flip-card-back {
+      position: absolute;
+      width: 100%;
+      height: 100%;
+      -webkit-backface-visibility: hidden;
+      backface-visibility: hidden;
+      border-radius: 18px;
+      padding: 24px;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      box-shadow: 0 12px 30px rgba(0,0,0,0.6);
+    }
+    .flip-card-front {
+      background: linear-gradient(135deg, #1e3a8a, #0f172a);
+      border: 2px solid #3b82f6;
+    }
+    .flip-card-back {
+      background: linear-gradient(135deg, #78350f, #1e293b);
+      border: 2px solid #f59e0b;
+      transform: rotateY(180deg);
+    }
+    .stamp-grid {
+      display: grid;
+      grid-template-columns: repeat(6, 1fr);
+      gap: 10px;
+      margin: 16px 0;
+    }
+    .stamp-slot {
+      aspect-ratio: 1;
+      border-radius: 50%;
+      border: 2px dashed #f59e0b;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.5rem;
+      background: rgba(0, 0, 0, 0.2);
+      transition: transform 0.3s;
+    }
+    .stamp-slot.punched {
+      border: 2px solid #10b981;
+      background: rgba(16, 185, 129, 0.25);
+      animation: popIn 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    }
+    @keyframes popIn {
+      0% { transform: scale(0.2); opacity: 0; }
+      100% { transform: scale(1); opacity: 1; }
+    }
+
+    /* Secret Drop Scratch / Tap Effect */
+    .secret-drop-box {
+      background: linear-gradient(135deg, #312e81, #1e1b4b);
+      border: 2px dashed #818cf8;
+      border-radius: 16px;
+      padding: 20px;
+      margin-bottom: 24px;
+      position: relative;
+      overflow: hidden;
+      cursor: pointer;
+    }
+    .scratch-cover {
+      position: absolute;
+      top: 0; left: 0; right: 0; bottom: 0;
+      background: linear-gradient(135deg, #4338ca, #6366f1);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      color: white;
+      font-weight: 800;
+      font-size: 1.2rem;
+      z-index: 5;
+      transition: opacity 0.5s ease, transform 0.5s ease;
+    }
+    .scratch-cover.revealed {
+      opacity: 0;
+      transform: scale(1.1);
+      pointer-events: none;
+    }
+
+    .menu-item-row {
+      background: var(--card-bg);
+      border: 1px solid var(--card-border);
+      border-radius: 12px;
+      padding: 16px;
+      margin-bottom: 12px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .favorite-banner {
+      background: rgba(245, 158, 11, 0.15);
+      border: 1px solid #f59e0b;
+      border-radius: 12px;
+      padding: 14px 18px;
+      margin-bottom: 20px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .filter-btn {
+      background: #1e293b;
+      border: 1px solid #334155;
+      color: #94a3b8;
+      padding: 6px 14px;
+      border-radius: 20px;
+      font-size: 0.85rem;
+      font-weight: 700;
+      cursor: pointer;
+      white-space: nowrap;
+      transition: all 0.2s;
+    }
+    .filter-btn:hover {
+      color: #fff;
+      border-color: #3b82f6;
+    }
+    .filter-btn.active {
+      background: #2563eb;
+      color: #fff;
+      border-color: #60a5fa;
+    }
+    .spec-tag {
+      display: inline-block;
+      font-size: 0.72rem;
+      font-weight: 700;
+      padding: 2px 7px;
+      border-radius: 4px;
+      margin-right: 4px;
+      margin-top: 4px;
+    }
+    .tag-size { background: rgba(59, 130, 246, 0.15); border: 1px solid #3b82f6; color: #93c5fd; }
+    .tag-diet { background: rgba(16, 185, 129, 0.15); border: 1px solid #10b981; color: #6ee7b7; }
+    .tag-zero { background: rgba(245, 158, 11, 0.15); border: 1px solid #f59e0b; color: #fcd34d; }
+    .tag-glass { background: rgba(236, 72, 153, 0.15); border: 1px solid #ec4899; color: #f472b6; }
+    .tag-pet { background: rgba(148, 163, 184, 0.12); border: 1px solid #475569; color: #cbd5e1; }
+  </style>
+</head>
+<body>
+
+  <header>
+    <div class="brand">
+      <span>🥤 Daily Drop</span>
+      <span class="brand-badge">Drinks & Packaged Water</span>
+    </div>
+    <div class="nav-links">
+      <span class="nav-link active">🥤 Chilled Drinks & Pure Water</span>
+    </div>
+  </header>
+
+  <div class="store-container">
+    <!-- Phone Input Bar -->
+    <div class="phone-bar">
+      <input type="tel" id="custPhone" class="phone-input" placeholder="Enter mobile # (e.g. 555-0101)" value="555-0101">
+      <button class="btn btn-primary" onclick="lookupCustomer()">
+        🔍 Check In
+      </button>
+    </div>
+
+    <!-- 3D Flipping Loyalty Card -->
+    <div class="flip-card-container" onclick="toggleCardFlip()">
+      <div class="flip-card-inner" id="flipCard">
+        <!-- Front side -->
+        <div class="flip-card-front">
+          <div style="display: flex; justify-content: space-between; align-items: center;">
+            <span style="font-weight: 800; color: #60a5fa; letter-spacing: 1px;">DAILY DROP REWARDS</span>
+            <span style="font-size: 0.8rem; color: #93c5fd;">Tap to Flip 🔄</span>
+          </div>
+          <div>
+            <div style="font-size: 1.5rem; font-weight: 800; color: #ffffff;" id="custNameFront">Welcome, Refreshment Lover!</div>
+            <div style="font-size: 0.88rem; color: #94a3b8; margin-top: 4px;">Enter phone number above to reveal your digital punch card.</div>
+          </div>
+          <div style="display: flex; justify-content: space-between; font-size: 0.85rem; color: #cbd5e1;">
+            <span>Buy 6 Chilled Drinks or Waters &bull; 7th Free!</span>
+            <span>⭐ VIP Club</span>
+          </div>
+        </div>
+
+        <!-- Back side (6-stamp Punch Card) -->
+        <div class="flip-card-back">
+          <div style="display: flex; justify-content: space-between; align-items: center;">
+            <span style="font-weight: 800; color: #fbbf24;">DIGITAL PUNCH CARD</span>
+            <span id="rewardsBadge" class="brand-badge">0 Free Drinks Earned</span>
+          </div>
+
+          <!-- 6 Stamp Circles -->
+          <div class="stamp-grid" id="stampGrid">
+            <div class="stamp-slot">1</div>
+            <div class="stamp-slot">2</div>
+            <div class="stamp-slot">3</div>
+            <div class="stamp-slot">4</div>
+            <div class="stamp-slot">5</div>
+            <div class="stamp-slot">🥤</div>
+          </div>
+
+          <div style="display: flex; justify-content: space-between; align-items: center; font-size: 0.85rem;">
+            <span id="stampsProgressText">0 / 6 stamps collected</span>
+            <span style="color: #94a3b8;">Phone: <strong id="cardPhoneLabel">---</strong></span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+
+    <!-- Customer Favorite Quick Re-Order Banner -->
+    <div class="favorite-banner" id="favoriteBanner" style="display: none;">
+      <div>
+        <div style="font-size: 0.75rem; text-transform: uppercase; color: #fbbf24; font-weight: 700;">Your Go-To Favorite</div>
+        <div style="font-size: 1.15rem; font-weight: 700; color: #fff;" id="favDrinkName">Iced Latte</div>
+      </div>
+      <button class="btn btn-primary" onclick="quickReorderFavorite()">
+        ⚡ Quick Re-Order
+      </button>
+    </div>
+
+    <!-- 10-Minute Exclusive Drinks Drop Interactive Box -->
+    <div class="secret-drop-box" id="secretDropBox">
+      <div class="scratch-cover" id="scratchCover" onclick="revealSecretDrop()">
+        <span style="font-size: 2rem; margin-bottom: 6px;">✨ 🎁 🤫</span>
+        <span>Tap / Scratch to Reveal This 10-Min Exclusive Drop!</span>
+        <div style="font-size: 0.8rem; font-weight: normal; margin-top: 4px; opacity: 0.9;">
+          ⏳ Rotates randomly every 10 minutes
+        </div>
+      </div>
+      <div id="secretDropContent">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; flex-wrap: wrap; gap: 6px;">
+          <div style="display: flex; align-items: center; gap: 8px;">
+            <span style="color: #a5b4fc; font-weight: 800; font-size: 0.85rem; text-transform: uppercase; letter-spacing: 0.5px;">🔥 10-MIN EXCLUSIVE DROP</span>
+            <span class="status-pill OK_GREEN" id="dropTimerPill" style="font-family: monospace; font-size: 0.8rem; padding: 3px 8px;">
+              ⏱️ <span id="dropCountdown">10:00</span>
+            </span>
+          </div>
+          <button class="btn" style="padding: 4px 10px; font-size: 0.75rem; background: rgba(255,255,255,0.1); border: 1px solid #818cf8;" onclick="rollExclusiveDropNow(event)">
+            🎲 Roll Random Drop
+          </button>
+        </div>
+        <div style="display: flex; justify-content: space-between; align-items: center;">
+          <div>
+            <div style="font-size: 1.35rem; font-weight: 800; color: #fff;" id="dropTitle">Loading exclusive drop...</div>
+            <div style="font-size: 0.85rem; color: #c7d2fe; margin-top: 4px;" id="dropDesc">Fresh batch selected every 10 mins</div>
+          </div>
+          <div style="text-align: right; min-width: 90px;">
+            <div style="font-size: 1.35rem; font-weight: 800; color: #fbbf24;" id="dropPrice">$0.00</div>
+            <button class="btn btn-primary" style="margin-top: 6px; padding: 6px 14px; font-size: 0.85rem;" id="dropOrderBtn">
+              Order Drop
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Standard Daily Menu -->
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; flex-wrap: wrap; gap: 8px;">
+      <div style="font-size: 1.25rem; font-weight: 700; color: #fff;">
+        🥤 Drinks & Packaged Water Menu
+      </div>
+      <div style="font-size: 0.82rem; color: #94a3b8;">
+        Showing Pepsi, 7up, Miranda, Mountain Dew, Sting, Slice & Aquafina
+      </div>
+    </div>
+
+    <!-- Brand Filter Pills -->
+    <div style="display: flex; gap: 8px; overflow-x: auto; padding-bottom: 8px; margin-bottom: 16px;">
+      <button class="filter-btn active" id="filter-ALL" onclick="filterCustomerMenu('ALL')">All Drinks & Water</button>
+      <button class="filter-btn" id="filter-Pepsi" onclick="filterCustomerMenu('Pepsi')">🥤 Pepsi</button>
+      <button class="filter-btn" id="filter-7up" onclick="filterCustomerMenu('7up')">🍋 7up</button>
+      <button class="filter-btn" id="filter-Miranda" onclick="filterCustomerMenu('Miranda Orange')">🍊 Miranda</button>
+      <button class="filter-btn" id="filter-Dew" onclick="filterCustomerMenu('Mountain Dew')">⚡ Mtn Dew</button>
+      <button class="filter-btn" id="filter-Sting" onclick="filterCustomerMenu('Sting')">⚡ Sting</button>
+      <button class="filter-btn" id="filter-Slice" onclick="filterCustomerMenu('Slice')">🥭 Slice</button>
+      <button class="filter-btn" id="filter-Aquafina" onclick="filterCustomerMenu('Aquafina Water')">💧 Aquafina</button>
+    </div>
+
+    <div id="menuList">
+      <div style="color: #94a3b8;">Loading chilled drinks & water menu...</div>
+    </div>
+  </div>
+
+  <div id="toast"></div>
+
+  <script>
+    const API_BASE = window.location.port === '8000' 
+      ? '' 
+      : `${window.location.protocol}//${window.location.hostname}:8000`;
+
+    let currentCustomer = null;
+    let dailySecretDropItem = null;
+    let menuItems = [];
+    let selectedBrandFilter = 'ALL';
+
+    function showToast(msg, isSuccess = true) {
+      const toast = document.getElementById('toast');
+      toast.innerText = msg;
+      toast.style.borderColor = isSuccess ? '#10b981' : '#ef4444';
+      toast.style.display = 'block';
+      setTimeout(() => { toast.style.display = 'none'; }, 3400);
+    }
+
+    function toggleCardFlip() {
+      document.getElementById('flipCard').classList.toggle('flipped');
+    }
+
+    function revealSecretDrop() {
+      const cover = document.getElementById('scratchCover');
+      cover.classList.add('revealed');
+    }
+
+    function filterCustomerMenu(brand) {
+      selectedBrandFilter = brand;
+      document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+      const activeBtn = document.getElementById(`filter-${brand === 'ALL' ? 'ALL' : brand.split(' ')[0]}`);
+      if (activeBtn) activeBtn.classList.add('active');
+      renderFilteredMenu();
+    }
+
+    function getDrinkTagsHtml(name, description) {
+      const combined = `${name} ${description || ''}`.toLowerCase();
+      let tagsHtml = '';
+
+      // Size tag
+      const sizeMatch = (name + " " + (description || "")).match(/\b(200\s*ml|250\s*ml|400\s*ml|500\s*ml|600\s*ml|1\.25\s*l|1\.75\s*l|2250\s*ml|1000\s*ml|1500\s*ml)\b/i);
+      if (sizeMatch) {
+        tagsHtml += `<span class="spec-tag tag-size">📏 ${sizeMatch[0]}</span>`;
+      }
+
+      // Type tag
+      if (combined.includes('zero sugar')) {
+        tagsHtml += `<span class="spec-tag tag-zero">🚫 Zero Sugar</span>`;
+      } else if (combined.includes('diet')) {
+        tagsHtml += `<span class="spec-tag tag-diet">🍃 Diet</span>`;
+      } else if (combined.includes('normal')) {
+        tagsHtml += `<span class="spec-tag tag-pet">Regular</span>`;
+      }
+
+      // Form tag
+      if (combined.includes('glass bottle')) {
+        tagsHtml += `<span class="spec-tag tag-glass">🍾 Glass Bottle</span>`;
+      } else if (combined.includes('bottle')) {
+        tagsHtml += `<span class="spec-tag tag-pet">PET Bottle</span>`;
+      }
+
+      return tagsHtml;
+    }
+
+    function getBrandIcon(name) {
+      const n = (name || '').toLowerCase();
+      if (n.includes('aquafina') || n.includes('water')) return '💧';
+      if (n.includes('pepsi')) return '🥤';
+      if (n.includes('7up') || n.includes('seven')) return '🍋';
+      if (n.includes('miranda') || n.includes('mirinda') || n.includes('orange')) return '🍊';
+      if (n.includes('mountain dew') || n.includes('dew')) return '⚡';
+      if (n.includes('sting')) return '⚡';
+      if (n.includes('slice')) return '🥭';
+      return '🥤';
+    }
+
+    function renderFilteredMenu() {
+      const menuList = document.getElementById('menuList');
+      const filtered = menuItems.filter(item => {
+        if (item.is_secret_drop) return false;
+        if (selectedBrandFilter === 'ALL') return true;
+        const brandKey = selectedBrandFilter.toLowerCase();
+        const itemName = item.name.toLowerCase();
+        const cat = (item.category || '').toLowerCase();
+        return itemName.includes(brandKey) || cat.includes(brandKey);
+      });
+
+      if (filtered.length === 0) {
+        menuList.innerHTML = `
+          <div style="text-align: center; padding: 36px 16px; background: #1e293b; border-radius: 12px; border: 1px dashed #334155;">
+            <div style="font-size: 2.5rem; margin-bottom: 8px;">🥤</div>
+            <div style="font-weight: 700; color: #fff; font-size: 1.05rem;">No items found for this selection</div>
+            <div style="color: #94a3b8; font-size: 0.85rem; margin-top: 4px;">
+              Try choosing "All Drinks & Water" or add items from the Shopkeeper page.
+            </div>
+          </div>
+        `;
+        return;
+      }
+
+      menuList.innerHTML = filtered.map(item => {
+        const icon = item.image_url || getBrandIcon(item.name);
+        const tagsHtml = getDrinkTagsHtml(item.name, item.description);
+
+        return `
+          <div class="menu-item-row">
+            <div style="display: flex; gap: 14px; align-items: center;">
+              <span style="font-size: 2.2rem;">${icon}</span>
+              <div>
+                <div style="font-weight: 700; color: #fff; font-size: 1.05rem;">${item.name}</div>
+                <div style="font-size: 0.8rem; color: #94a3b8; max-width: 320px;">${item.description || ''}</div>
+                <div>${tagsHtml}</div>
+              </div>
+            </div>
+            <div style="text-align: right; min-width: 85px;">
+              <div style="font-weight: 800; color: #fbbf24; font-size: 1.15rem; margin-bottom: 6px;">
+                $${item.price.toFixed(2)}
+              </div>
+              <button class="btn btn-primary" style="padding: 6px 14px; font-size: 0.85rem;" onclick="orderSingleItem(${item.id}, '${item.name}')">
+                Order
+              </button>
+            </div>
+          </div>
+        `;
+      }).join('');
+    }
+
+    async function lookupCustomer() {
+      const phone = document.getElementById('custPhone').value.trim();
+      if (!phone) {
+        showToast('Please enter a phone number', false);
+        return;
+      }
+
+      try {
+        const res = await fetch(`${API_BASE}/api/customer/lookup?phone=${encodeURIComponent(phone)}`);
+        const data = await res.json();
+        currentCustomer = data;
+
+        // Animate card flip to show back with punch card
+        const flipCard = document.getElementById('flipCard');
+        flipCard.classList.add('flipped');
+
+        document.getElementById('custNameFront').innerText = data.full_name;
+        document.getElementById('cardPhoneLabel').innerText = data.phone;
+        document.getElementById('rewardsBadge').innerText = `🎁 ${data.rewards_earned} Free Drinks Earned`;
+        document.getElementById('stampsProgressText').innerText = `${data.punch_card_stamps} / 6 stamps collected`;
+
+        renderPunchCard(data.punch_card_stamps);
+
+        // Show favorite re-order banner if available
+        const favBanner = document.getElementById('favoriteBanner');
+        if (data.most_ordered_drink) {
+          favBanner.style.display = 'flex';
+          document.getElementById('favDrinkName').innerText = `${data.most_ordered_icon || '🥤'} ${data.most_ordered_drink}`;
+        } else {
+          favBanner.style.display = 'none';
+        }
+
+        showToast(`Welcome back, ${data.full_name}! Stamps: ${data.punch_card_stamps}/6`);
+      } catch (err) {
+        showToast('Lookup error: ' + err.message, false);
+      }
+    }
+
+    function renderPunchCard(stampsCount) {
+      const grid = document.getElementById('stampGrid');
+      let html = '';
+      for (let i = 1; i <= 6; i++) {
+        const isPunched = i <= stampsCount;
+        html += `
+          <div class="stamp-slot ${isPunched ? 'punched' : ''}">
+            ${isPunched ? '🥤' : i}
+          </div>
+        `;
+      }
+      grid.innerHTML = html;
+    }
+
+    async function loadDailyMenu() {
+      try {
+        const res = await fetch(`${API_BASE}/api/menu/daily`);
+        const data = await res.json();
+        menuItems = data.items;
+
+        // Handle 10-Minute Exclusive Secret Drop
+        if (data.exclusive_drop) {
+          applyExclusiveDrop(data.exclusive_drop);
+          startDropTimer(data.seconds_remaining || 600);
+        } else {
+          fetchExclusiveDrop(false);
+        }
+
+        renderFilteredMenu();
+      } catch (err) {
+        showToast('Failed to load menu: ' + err.message, false);
+      }
+    }
+
+    let dropCountdownSeconds = 600;
+    let dropTimerInterval = null;
+
+    function startDropTimer(seconds) {
+      if (dropTimerInterval) clearInterval(dropTimerInterval);
+      dropCountdownSeconds = seconds > 0 ? seconds : 600;
+      updateCountdownDisplay();
+
+      dropTimerInterval = setInterval(() => {
+        dropCountdownSeconds--;
+        if (dropCountdownSeconds <= 0) {
+          clearInterval(dropTimerInterval);
+          showToast('✨ 10 Minutes Elapsed! Rolling New Random Exclusive Drop...', true);
+          // Re-cover scratch card so customer gets to reveal the new drop
+          const cover = document.getElementById('scratchCover');
+          if (cover) cover.classList.remove('revealed');
+          fetchExclusiveDrop(false);
+        } else {
+          updateCountdownDisplay();
+        }
+      }, 1000);
+    }
+
+    function updateCountdownDisplay() {
+      const el = document.getElementById('dropCountdown');
+      if (!el) return;
+      const m = Math.floor(dropCountdownSeconds / 60);
+      const s = dropCountdownSeconds % 60;
+      el.innerText = `${m.toString().padStart(2, '0')}:${s.toString().padStart(2, '0')}`;
+    }
+
+    async function fetchExclusiveDrop(forceRandom = false) {
+      try {
+        const res = await fetch(`${API_BASE}/api/menu/exclusive-drop${forceRandom ? '?force_random=true' : ''}`);
+        const data = await res.json();
+        if (data.has_exclusive && data.exclusive_item) {
+          applyExclusiveDrop(data.exclusive_item);
+          startDropTimer(data.seconds_remaining);
+          if (forceRandom) {
+            showToast(`🎲 Rolled New Drop: "${data.exclusive_item.name}"!`);
+          }
+        }
+      } catch (err) {
+        console.error('Error fetching exclusive drop:', err);
+      }
+    }
+
+    function applyExclusiveDrop(item) {
+      dailySecretDropItem = item;
+      document.getElementById('secretDropBox').style.display = 'block';
+      document.getElementById('dropTitle').innerText = `${item.image_url || '✨'} ${item.name}`;
+      document.getElementById('dropDesc').innerText = item.description || 'Exclusive specialty craft (Randomly changes every 10 mins)';
+      document.getElementById('dropPrice').innerText = `$${item.price.toFixed(2)}`;
+      document.getElementById('dropOrderBtn').onclick = () => orderSingleItem(item.id, item.name);
+    }
+
+    function rollExclusiveDropNow(e) {
+      if (e) e.stopPropagation();
+      const cover = document.getElementById('scratchCover');
+      if (cover) cover.classList.remove('revealed');
+      fetchExclusiveDrop(true);
+    }
+
+
+    async function orderSingleItem(menuItemId, itemName) {
+      const phone = document.getElementById('custPhone').value.trim();
+      const payload = {
+        phone: phone || null,
+        items: [{ menu_item_id: menuItemId, quantity: 1 }]
+      };
+
+      try {
+        const res = await fetch(`${API_BASE}/api/orders/place`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload)
+        });
+        const data = await res.json();
+        if (res.ok) {
+          showToast(`🎉 Order Placed! Token: [ ${data.pickup_token} ] • Total: $${data.total_amount}`);
+          // Refresh customer punch card
+          if (phone) {
+            lookupCustomer();
+          }
+        } else {
+          showToast(data.detail || 'Order placement failed', false);
+        }
+      } catch (err) {
+        showToast('Network error: ' + err.message, false);
+      }
+    }
+
+    function quickReorderFavorite() {
+      if (!currentCustomer || !currentCustomer.most_ordered_drink) return;
+      const fav = menuItems.find(i => i.name === currentCustomer.most_ordered_drink);
+      if (fav) {
+        orderSingleItem(fav.id, fav.name);
+      } else {
+        showToast(`Ordering ${currentCustomer.most_ordered_drink}...`);
+      }
+    }
+
+    // Initialize
+    lookupCustomer();
+    loadDailyMenu();
+  </script>
+  <script src="../shared/rbac.js"></script>
+  <script>
+    initRBAC('customer');
+  </script>
+</body>
+</html>

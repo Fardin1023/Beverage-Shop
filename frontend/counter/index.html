@@ -1,0 +1,1211 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+  <title>Daily Drop - Shopkeeper Stocks, Demand & Add Items</title>
+  <link rel="stylesheet" href="../shared/styles.css">
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <style>
+    body {
+      background: #090d16;
+    }
+    .tablet-header {
+      background: #131c2e;
+      border-bottom: 2px solid #243452;
+      padding: 18px 24px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .tablet-title {
+      font-size: 1.5rem;
+      font-weight: 800;
+      color: #f1f5f9;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+    .staff-badge {
+      background: #1e293b;
+      padding: 6px 14px;
+      border-radius: 20px;
+      font-size: 0.9rem;
+      color: #94a3b8;
+      border: 1px solid #334155;
+    }
+
+    /* Demand Metrics Summary */
+    .metrics-grid {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 16px;
+      margin-top: 20px;
+      margin-bottom: 24px;
+    }
+    @media (max-width: 860px) {
+      .metrics-grid {
+        grid-template-columns: repeat(2, 1fr);
+      }
+    }
+    .metric-card {
+      background: #131d2e;
+      border: 1px solid #22324e;
+      border-radius: 14px;
+      padding: 18px;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+    }
+    .metric-label {
+      font-size: 0.8rem;
+      color: #94a3b8;
+      text-transform: uppercase;
+      font-weight: 700;
+      letter-spacing: 0.5px;
+    }
+    .metric-val {
+      font-size: 1.9rem;
+      font-weight: 800;
+      color: #f8fafc;
+      margin-top: 6px;
+    }
+    .metric-sub {
+      font-size: 0.75rem;
+      color: #64748b;
+      margin-top: 4px;
+    }
+
+    /* Sales Graph Panel */
+    .chart-panel {
+      background: #131d2e;
+      border: 1px solid #22324e;
+      border-radius: 16px;
+      padding: 24px;
+      margin-bottom: 28px;
+    }
+    .chart-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 20px;
+      flex-wrap: wrap;
+      gap: 12px;
+    }
+    .chart-title {
+      font-size: 1.25rem;
+      font-weight: 700;
+      color: #fff;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .chart-canvas-wrapper {
+      position: relative;
+      height: 320px;
+      width: 100%;
+    }
+
+    /* Fallback Bar Graph */
+    .svg-bar-chart {
+      width: 100%;
+      height: 280px;
+      display: flex;
+      align-items: flex-end;
+      gap: 18px;
+      padding-top: 30px;
+      border-bottom: 2px solid #334155;
+    }
+    .svg-bar-col {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      height: 100%;
+      justify-content: flex-end;
+    }
+    .svg-bar {
+      width: 100%;
+      max-width: 52px;
+      background: linear-gradient(180deg, #f59e0b, #d97706);
+      border-radius: 6px 6px 0 0;
+      transition: height 0.4s ease;
+      position: relative;
+      min-height: 4px;
+    }
+    .svg-bar-val {
+      position: absolute;
+      top: -24px;
+      width: 100%;
+      text-align: center;
+      font-size: 0.8rem;
+      font-weight: 700;
+      color: #fbbf24;
+    }
+    .svg-bar-label {
+      font-size: 0.75rem;
+      color: #94a3b8;
+      margin-top: 8px;
+      text-align: center;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      max-width: 70px;
+    }
+
+    /* Add Items Ingestion Card on Shopkeeper Tablet */
+    .ingest-card {
+      background: #131d2e;
+      border: 2px solid #f59e0b;
+      border-radius: 16px;
+      padding: 24px;
+      margin-bottom: 28px;
+      box-shadow: 0 8px 24px rgba(245, 158, 11, 0.1);
+    }
+    .ingest-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 18px;
+      flex-wrap: wrap;
+      gap: 12px;
+    }
+    .ingest-tabs {
+      display: flex;
+      gap: 10px;
+      border-bottom: 2px solid #22324e;
+      margin-bottom: 20px;
+      padding-bottom: 12px;
+    }
+    .ingest-tab {
+      background: #1e293b;
+      border: 1px solid #334155;
+      color: #94a3b8;
+      padding: 9px 16px;
+      border-radius: 8px;
+      font-weight: 700;
+      font-size: 0.88rem;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+    .ingest-tab:hover {
+      color: #fff;
+      border-color: #f59e0b;
+    }
+    .ingest-tab.active {
+      background: #d97706;
+      border-color: #f59e0b;
+      color: #fff;
+    }
+    .form-grid-3 {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 14px;
+      margin-bottom: 14px;
+    }
+    @media (max-width: 860px) {
+      .form-grid-3 {
+        grid-template-columns: 1fr;
+      }
+    }
+    .form-group {
+      margin-bottom: 12px;
+    }
+    label {
+      display: block;
+      font-size: 0.78rem;
+      font-weight: 700;
+      color: #94a3b8;
+      margin-bottom: 6px;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+    input, select {
+      width: 100%;
+      background: #090d16;
+      border: 1px solid #334155;
+      color: #fff;
+      font-size: 0.95rem;
+      padding: 10px 14px;
+      border-radius: 8px;
+      outline: none;
+    }
+    input:focus, select:focus {
+      border-color: #f59e0b;
+    }
+    .drop-zone {
+      border: 2px dashed #3b82f6;
+      background: rgba(59, 130, 246, 0.05);
+      border-radius: 12px;
+      padding: 26px 16px;
+      text-align: center;
+      cursor: pointer;
+      margin-bottom: 16px;
+      transition: all 0.2s;
+    }
+    .drop-zone:hover {
+      background: rgba(59, 130, 246, 0.12);
+      border-color: #60a5fa;
+    }
+
+    /* Stock Cards Grid */
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+      gap: 20px;
+      margin-top: 20px;
+    }
+    .card {
+      background: #131d2e;
+      border: 2px solid #22324e;
+      border-radius: 16px;
+      padding: 20px;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      transition: all 0.2s ease;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+    }
+    .card.CRITICAL_RED {
+      border-color: #ef4444;
+      background: #1f141a;
+    }
+    .card.LOW_YELLOW {
+      border-color: #f59e0b;
+      background: #1c1a14;
+    }
+    .card-top {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      margin-bottom: 12px;
+    }
+    .item-icon {
+      font-size: 2.8rem;
+      line-height: 1;
+    }
+    .item-title {
+      font-size: 1.35rem;
+      font-weight: 700;
+      color: #ffffff;
+      margin-top: 4px;
+    }
+    .item-thresholds {
+      font-size: 0.8rem;
+      color: #94a3b8;
+      margin-top: 4px;
+    }
+    .stock-display {
+      display: flex;
+      align-items: baseline;
+      gap: 6px;
+      margin: 16px 0;
+    }
+    .stock-number {
+      font-size: 2.8rem;
+      font-weight: 800;
+      color: #f8fafc;
+      letter-spacing: -1px;
+    }
+    .stock-unit {
+      font-size: 1.25rem;
+      font-weight: 600;
+      color: #94a3b8;
+    }
+    .stepper-row {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
+      margin-bottom: 12px;
+    }
+    .step-btn {
+      height: 56px;
+      font-size: 1.5rem;
+      font-weight: 700;
+      border-radius: 12px;
+      border: 2px solid transparent;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      user-select: none;
+      transition: transform 0.08s ease, background 0.15s ease;
+    }
+    .step-btn:active {
+      transform: scale(0.92);
+    }
+    .step-minus {
+      background: #334155;
+      color: #f87171;
+    }
+    .step-minus:hover {
+      background: #475569;
+    }
+    .step-plus-locked {
+      background: #1a2234;
+      color: #64748b;
+      border: 1px dashed #334155;
+      font-size: 0.78rem;
+      cursor: not-allowed;
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+      line-height: 1.1;
+    }
+    .alert-btn {
+      width: 100%;
+      height: 48px;
+      background: #dc2626;
+      color: white;
+      font-size: 1rem;
+      font-weight: 700;
+      border-radius: 10px;
+      border: none;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      transition: all 0.15s;
+    }
+    .alert-btn:hover {
+      background: #b91c1c;
+    }
+    .alert-btn:active {
+      transform: scale(0.96);
+    }
+    .alert-btn.sent {
+      background: #059669;
+    }
+    .counter-bar {
+      display: flex;
+      gap: 16px;
+      align-items: center;
+      margin-top: 16px;
+      background: #131d2e;
+      padding: 12px 18px;
+      border-radius: 12px;
+      border: 1px solid #22324e;
+    }
+  </style>
+</head>
+<body>
+
+  <header class="tablet-header">
+    <div class="tablet-title">
+      <span>🧑‍🍳 Daily Drop</span>
+      <span class="brand-badge">Shopkeeper View</span>
+    </div>
+    <div class="nav-links">
+      <span class="nav-link active">📊 Products Stocks & Product Demand</span>
+    </div>
+    <div class="staff-badge">
+      🧑‍🍳 Shopkeeper: <strong>Alice Chen</strong>
+    </div>
+  </header>
+
+  <div class="container">
+    <!-- SECTION 1: Product Demand Based on Sales & Interactive Graph -->
+    <div style="margin-top: 8px;">
+      <div style="font-size: 1.4rem; font-weight: 800; color: #fff;">
+        📈 Product Demand Intelligence (Based on Sales)
+      </div>
+      <div style="font-size: 0.85rem; color: #94a3b8; margin-top: 4px;">
+        Real-time sales numbers and demand analytics generated from customer checkout transactions
+      </div>
+    </div>
+
+    <!-- Summary Metrics Cards -->
+    <div class="metrics-grid">
+      <div class="metric-card">
+        <span class="metric-label">Completed Orders</span>
+        <div class="metric-val" id="metricOrders">0</div>
+        <span class="metric-sub">Total sales orders</span>
+      </div>
+      <div class="metric-card">
+        <span class="metric-label">Total Drinks Demanded</span>
+        <div class="metric-val" id="metricUnits" style="color: #38bdf8;">0</div>
+        <span class="metric-sub">Units prepared & sold</span>
+      </div>
+      <div class="metric-card">
+        <span class="metric-label">Total Sales Revenue</span>
+        <div class="metric-val" id="metricRevenue" style="color: #34d399;">$0.00</div>
+        <span class="metric-sub">Gross register revenue</span>
+      </div>
+      <div class="metric-card">
+        <span class="metric-label">Top Demanded Beverage</span>
+        <div class="metric-val" id="metricTopItem" style="font-size: 1.3rem; color: #fbbf24; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">-</div>
+        <span class="metric-sub">Highest consumer demand</span>
+      </div>
+    </div>
+
+    <!-- Interactive Graph Container -->
+    <div class="chart-panel">
+      <div class="chart-header">
+        <div class="chart-title">
+          <span>📊 Beverage Sales Demand Chart (Units Sold)</span>
+        </div>
+        <button class="btn btn-primary" onclick="loadSalesDemand()" style="font-size: 0.85rem; padding: 6px 12px;">
+          🔄 Refresh Sales Data
+        </button>
+      </div>
+
+      <div class="chart-canvas-wrapper" id="chartWrapper">
+        <canvas id="salesDemandChart"></canvas>
+      </div>
+      <div id="chartFallback" style="display: none;"></div>
+    </div>
+
+    <!-- SECTION 2: ADD ITEMS DIRECTLY FROM SHOPKEEPER PAGE -->
+    <div class="ingest-card">
+      <div class="ingest-header">
+        <div>
+          <div style="font-size: 1.3rem; font-weight: 800; color: #fff; display: flex; align-items: center; gap: 10px;">
+            <span>➕ Add Items to Shop</span>
+            <span class="status-badge" style="background: rgba(245, 158, 11, 0.2); color: #fbbf24; border: 1px solid #f59e0b;">Shopkeeper Ingestion</span>
+          </div>
+          <div style="font-size: 0.82rem; color: #94a3b8; margin-top: 4px;">
+            Input new items into the catalog from the counter tablet via manual typing or upload a products list PDF.
+          </div>
+        </div>
+        <a href="/api/catalog/sample-pdf" target="_blank" class="btn" style="background: #1e293b; border: 1px solid #475569; color: #fbbf24; font-size: 0.8rem;">
+          📄 Sample Products PDF
+        </a>
+      </div>
+
+      <!-- Ingestion Tabs -->
+      <div class="ingest-tabs">
+        <button class="ingest-tab active" id="shopTabManualBtn" onclick="switchShopIngestTab('manual')">
+          ⌨️ Method 1: Manual Typing
+        </button>
+        <button class="ingest-tab" id="shopTabPdfBtn" onclick="switchShopIngestTab('pdf')">
+          📄 Method 2: Products List PDF Upload
+        </button>
+      </div>
+
+      <!-- Tab 1: Manual Typing -->
+      <div id="shopTabManual">
+        <form id="shopManualForm" onsubmit="handleShopManualSubmit(event)">
+          <!-- Row 1: Brand, Type, Form, Size Selectors -->
+          <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 12px; margin-bottom: 14px; background: #0c1322; padding: 14px; border-radius: 12px; border: 1px solid #1e293b;">
+            <div class="form-group" style="margin-bottom: 0;">
+              <label>Drink / Water Brand *</label>
+              <select id="shopBrandSelect" onchange="onBrandChange()" required>
+                <option value="Pepsi">🥤 Pepsi</option>
+                <option value="7up">🍋 7up</option>
+                <option value="Miranda Orange">🍊 Miranda Orange</option>
+                <option value="Mountain Dew">⚡ Mountain Dew</option>
+                <option value="Sting">⚡ Sting</option>
+                <option value="Slice">🥭 Slice</option>
+                <option value="Aquafina Water">💧 Aquafina Water</option>
+              </select>
+            </div>
+
+            <div class="form-group" style="margin-bottom: 0;">
+              <label>Type / Formula *</label>
+              <select id="shopTypeSelect" onchange="updateGeneratedName()" required>
+                <option value="Diet">Diet</option>
+                <option value="Zero Sugar">Zero Sugar</option>
+                <option value="Normal">Normal</option>
+              </select>
+            </div>
+
+            <div class="form-group" style="margin-bottom: 0;">
+              <label>Packaging Form *</label>
+              <select id="shopFormSelect" onchange="updateGeneratedName()" required>
+                <option value="Bottle">Bottle (PET)</option>
+                <option value="Glass bottle">Glass bottle</option>
+              </select>
+            </div>
+
+            <div class="form-group" style="margin-bottom: 0;">
+              <label>Volume / Size *</label>
+              <select id="shopSizeSelect" onchange="updateGeneratedName()" required>
+                <!-- Populated dynamically based on brand: Drinks (200ml - 2250 ml) vs Water (500ml - 1500ml) -->
+              </select>
+            </div>
+          </div>
+
+          <!-- Row 2: Generated Item Name, Category, Price -->
+          <div class="form-grid-3">
+            <div class="form-group">
+              <label>Drink / Item Name *</label>
+              <input type="text" id="shopItemName" placeholder="e.g. Pepsi - Diet (Bottle, 500 ml)" required>
+            </div>
+            <div class="form-group">
+              <label>Category *</label>
+              <select id="shopItemCategory" required>
+                <option value="Carbonated Drinks">🥤 Carbonated Drinks</option>
+                <option value="Energy Drinks">⚡ Energy Drinks</option>
+                <option value="Juice Drinks">🥭 Juice Drinks</option>
+                <option value="Packaged Water">💧 Packaged Water</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label>Price ($ USD) *</label>
+              <input type="number" id="shopItemPrice" step="0.05" min="0.25" placeholder="e.g. 1.50" value="1.50" required>
+            </div>
+          </div>
+
+          <!-- Row 3: Description, Secret Drop Day, Emoji Icon -->
+          <div class="form-grid-3">
+            <div class="form-group">
+              <label>Description</label>
+              <input type="text" id="shopItemDesc" placeholder="e.g. Chilled Diet Pepsi in 500 ml PET bottle">
+            </div>
+            <div class="form-group">
+              <label>Secret Drop Day (Optional)</label>
+              <select id="shopItemDay">
+                <option value="">Everyday (Standard Stock)</option>
+                <option value="1">Sunday Secret Drop</option>
+                <option value="2">Monday Secret Drop</option>
+                <option value="3">Tuesday Secret Drop</option>
+                <option value="4">Wednesday Secret Drop</option>
+                <option value="5">Thursday Secret Drop</option>
+                <option value="6">Friday Secret Drop</option>
+                <option value="7">Saturday Secret Drop</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label>Emoji Icon</label>
+              <select id="shopItemIcon">
+                <option value="🥤">🥤 Pepsi / Soda Cup</option>
+                <option value="🍋">🍋 7up Lemon-Lime</option>
+                <option value="🍊">🍊 Miranda Orange</option>
+                <option value="⚡">⚡ Mountain Dew / Sting</option>
+                <option value="🥭">🥭 Slice Mango</option>
+                <option value="💧">💧 Aquafina Pure Water</option>
+                <option value="🍾">🍾 Glass Bottle</option>
+              </select>
+            </div>
+          </div>
+
+          <div style="background: #090d16; padding: 12px 16px; border-radius: 8px; border: 1px solid #22324e; margin-bottom: 16px; display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 12px;">
+            <label style="display: flex; align-items: center; gap: 8px; margin-bottom: 0; cursor: pointer; text-transform: none; color: #cbd5e1;">
+              <input type="checkbox" id="shopAutoInventory" checked style="width: auto;">
+              Auto-create inventory tracking item with opening stock:
+            </label>
+            <div style="display: flex; align-items: center; gap: 8px;">
+              <input type="number" id="shopOpeningStock" value="30.0" step="1" min="0" style="width: 80px; padding: 6px 10px;">
+              <span style="font-size: 0.8rem; color: #94a3b8;">bottles</span>
+            </div>
+          </div>
+
+          <button type="submit" class="btn btn-primary" style="height: 48px; width: 100%; font-size: 1rem; font-weight: 700;">
+            ➕ Add Item to Shop Catalog & Stock
+          </button>
+        </form>
+      </div>
+
+      <!-- Tab 2: PDF Upload -->
+      <div id="shopTabPdf" style="display: none;">
+        <form onsubmit="handleShopPdfSubmit(event)">
+          <div class="drop-zone" onclick="document.getElementById('shopPdfFileInput').click()">
+            <div style="font-size: 2.5rem; margin-bottom: 8px;">📄</div>
+            <div style="font-weight: 700; color: #fff; font-size: 1.05rem;" id="shopDropZoneText">
+              Click to browse or drag & drop Products List PDF
+            </div>
+            <div style="font-size: 0.8rem; color: #94a3b8; margin-top: 4px;">
+              Imports drink names, categories, pricing, and initializes stock automatically
+            </div>
+            <input type="file" id="shopPdfFileInput" accept=".pdf" style="display: none;" onchange="handleShopFileSelected(event)" required>
+          </div>
+
+          <button type="submit" class="btn btn-success" id="shopPdfBtn" style="height: 48px; width: 100%; font-size: 1rem; font-weight: 700;">
+            🚀 Parse & Import PDF Items to Shop
+          </button>
+        </form>
+
+        <div id="shopPdfResults" style="display: none; margin-top: 14px; background: #090d16; border: 1px solid #10b981; border-radius: 8px; padding: 12px 16px;">
+          <div style="font-weight: 700; color: #34d399;" id="shopPdfResultsTitle"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- SECTION 3: Products Stocks Database -->
+    <div class="counter-bar">
+      <div style="flex: 1;">
+        <div style="font-size: 1.2rem; font-weight: 700; color: #fff;">
+          🏬 Products Stocks Snapshot
+        </div>
+        <div style="font-size: 0.82rem; color: #94a3b8;">
+          Live shop inventory balances &bull; <em>Products quantity can only be added through the supplier</em>
+        </div>
+      </div>
+      <button class="btn btn-primary" onclick="loadStock()">
+        🔄 Refresh Stocks
+      </button>
+    </div>
+
+    <div class="grid" id="stockGrid">
+      <div style="color: #94a3b8; font-size: 1.1rem; padding: 20px;">Loading live inventory items...</div>
+    </div>
+  </div>
+
+  <div id="toast"></div>
+
+  <script src="../shared/rbac.js"></script>
+  <script>
+    initRBAC('shopkeeper');
+
+    const API_BASE = window.location.port === '8000' 
+      ? '' 
+      : `${window.location.protocol}//${window.location.hostname}:8000`;
+
+    const DRINK_SIZES = ['200ml', '250 ml', '400 ml', '500 ml', '600 ml', '1.25 l', '1.75l', '2250 ml'];
+    const WATER_SIZES = ['500 ml', '1000 ml', '1500ml'];
+
+    const BRAND_CONFIG = {
+      'Pepsi': {
+        types: ['Diet', 'Zero Sugar', 'Normal'],
+        forms: ['Bottle', 'Glass bottle'],
+        category: 'Carbonated Drinks',
+        icon: '🥤',
+        defaultPrice: 1.50
+      },
+      '7up': {
+        types: ['Zero Sugar', 'Normal'],
+        forms: ['Bottle', 'Glass bottle'],
+        category: 'Carbonated Drinks',
+        icon: '🍋',
+        defaultPrice: 1.50
+      },
+      'Miranda Orange': {
+        types: ['Normal'],
+        forms: ['Bottle', 'Glass bottle'],
+        category: 'Carbonated Drinks',
+        icon: '🍊',
+        defaultPrice: 1.40
+      },
+      'Mountain Dew': {
+        types: ['Normal'],
+        forms: ['Bottle', 'Glass bottle'],
+        category: 'Carbonated Drinks',
+        icon: '⚡',
+        defaultPrice: 1.35
+      },
+      'Sting': {
+        types: ['Normal'],
+        forms: ['Bottle', 'Glass bottle'],
+        category: 'Energy Drinks',
+        icon: '⚡',
+        defaultPrice: 1.00
+      },
+      'Slice': {
+        types: ['Normal'],
+        forms: ['Bottle', 'Glass bottle'],
+        category: 'Juice Drinks',
+        icon: '🥭',
+        defaultPrice: 1.60
+      },
+      'Aquafina Water': {
+        types: ['Pure Water'],
+        forms: ['Bottle'],
+        category: 'Packaged Water',
+        icon: '💧',
+        defaultPrice: 0.85
+      }
+    };
+
+    function getItemIcon(name) {
+      const n = (name || '').toLowerCase();
+      if (n.includes('aquafina') || n.includes('water')) return '💧';
+      if (n.includes('pepsi')) return '🥤';
+      if (n.includes('7up') || n.includes('seven')) return '🍋';
+      if (n.includes('miranda') || n.includes('mirinda') || n.includes('orange')) return '🍊';
+      if (n.includes('mountain dew') || n.includes('dew')) return '⚡';
+      if (n.includes('sting')) return '⚡';
+      if (n.includes('slice')) return '🥭';
+      return '🥤';
+    }
+
+    function onBrandChange() {
+      const brand = document.getElementById('shopBrandSelect').value;
+      const config = BRAND_CONFIG[brand] || BRAND_CONFIG['Pepsi'];
+
+      // Populate Types
+      const typeSel = document.getElementById('shopTypeSelect');
+      typeSel.innerHTML = config.types.map(t => `<option value="${t}">${t}</option>`).join('');
+
+      // Populate Forms
+      const formSel = document.getElementById('shopFormSelect');
+      formSel.innerHTML = config.forms.map(f => `<option value="${f}">${f}</option>`).join('');
+
+      // Populate Sizes
+      const sizeSel = document.getElementById('shopSizeSelect');
+      const sizes = (brand === 'Aquafina Water') ? WATER_SIZES : DRINK_SIZES;
+      sizeSel.innerHTML = sizes.map(s => `<option value="${s}">${s}</option>`).join('');
+      // Default to 500 ml if available
+      if (sizes.includes('500 ml')) sizeSel.value = '500 ml';
+
+      // Category & Icon
+      document.getElementById('shopItemCategory').value = config.category;
+      document.getElementById('shopItemIcon').value = config.icon;
+      document.getElementById('shopItemPrice').value = config.defaultPrice.toFixed(2);
+
+      updateGeneratedName();
+    }
+
+    function updateGeneratedName() {
+      const brand = document.getElementById('shopBrandSelect').value;
+      const type = document.getElementById('shopTypeSelect').value;
+      const form = document.getElementById('shopFormSelect').value;
+      const size = document.getElementById('shopSizeSelect').value;
+
+      let generatedName = '';
+      if (brand === 'Pepsi' || brand === '7up') {
+        generatedName = `${brand} - ${type} (${form}, ${size})`;
+      } else if (brand === 'Aquafina Water') {
+        generatedName = `Aquafina Water (${form}, ${size})`;
+      } else {
+        generatedName = `${brand} (${form}, ${size})`;
+      }
+
+      document.getElementById('shopItemName').value = generatedName;
+      document.getElementById('shopItemDesc').value = `Chilled ${brand} in ${form.toLowerCase()} (${size})`;
+
+      // Adjust price by size tier
+      const base = BRAND_CONFIG[brand] ? BRAND_CONFIG[brand].defaultPrice : 1.50;
+      let finalPrice = base;
+      if (size === '200ml' || size === '250 ml') finalPrice = base * 0.85;
+      else if (size === '600 ml' || size === '1000 ml') finalPrice = base * 1.25;
+      else if (size === '1.25 l' || size === '1500ml') finalPrice = base * 1.50;
+      else if (size === '1.75l' || size === '2250 ml') finalPrice = base * 1.85;
+      document.getElementById('shopItemPrice').value = Math.max(0.50, finalPrice).toFixed(2);
+    }
+
+    let debounceTimers = {};
+    let chartInstance = null;
+
+    function showToast(msg, isSuccess = true) {
+      const toast = document.getElementById('toast');
+      toast.innerText = msg;
+      toast.style.borderColor = isSuccess ? '#10b981' : '#ef4444';
+      toast.style.display = 'block';
+      setTimeout(() => { toast.style.display = 'none'; }, 3200);
+    }
+
+    // Tab switching for Shopkeeper Add Items
+    function switchShopIngestTab(tab) {
+      document.getElementById('shopTabManual').style.display = tab === 'manual' ? 'block' : 'none';
+      document.getElementById('shopTabPdf').style.display = tab === 'pdf' ? 'block' : 'none';
+
+      document.getElementById('shopTabManualBtn').className = `ingest-tab ${tab === 'manual' ? 'active' : ''}`;
+      document.getElementById('shopTabPdfBtn').className = `ingest-tab ${tab === 'pdf' ? 'active' : ''}`;
+    }
+
+    // 1. Shopkeeper Add Item Manually
+    async function handleShopManualSubmit(e) {
+      e.preventDefault();
+      const payload = {
+        name: document.getElementById('shopItemName').value.trim(),
+        category: document.getElementById('shopItemCategory').value,
+        price: parseFloat(document.getElementById('shopItemPrice').value),
+        description: document.getElementById('shopItemDesc').value.trim(),
+        available_day_of_week: document.getElementById('shopItemDay').value ? parseInt(document.getElementById('shopItemDay').value) : null,
+        image_url: document.getElementById('shopItemIcon').value,
+        auto_create_inventory: document.getElementById('shopAutoInventory').checked,
+        opening_stock: parseFloat(document.getElementById('shopOpeningStock').value) || 30.0,
+        ingredient_unit: 'bottles'
+      };
+
+      try {
+        const res = await fetch(`${API_BASE}/api/catalog/manual-product`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload)
+        });
+        const data = await res.json();
+        if (res.ok) {
+          showToast(`✅ Added '${data.name}' ($${data.price.toFixed(2)}) to Shop!`);
+          document.getElementById('shopAutoInventory').checked = true;
+          document.getElementById('shopOpeningStock').value = '30.0';
+          onBrandChange();
+          // Immediately refresh shop stock and demand
+          loadStock();
+          loadSalesDemand();
+        } else {
+          showToast(data.detail || 'Failed to add item', false);
+        }
+      } catch (err) {
+        showToast('Network error: ' + err.message, false);
+      }
+    }
+
+    // 2. Shopkeeper Add Items via PDF Upload
+    function handleShopFileSelected(e) {
+      const file = e.target.files[0];
+      if (file) {
+        document.getElementById('shopDropZoneText').innerText = `Selected: ${file.name} (${(file.size / 1024).toFixed(1)} KB)`;
+      }
+    }
+
+    async function handleShopPdfSubmit(e) {
+      e.preventDefault();
+      const fileInput = document.getElementById('shopPdfFileInput');
+      if (!fileInput.files || fileInput.files.length === 0) {
+        showToast('Please select a PDF file first', false);
+        return;
+      }
+
+      const file = fileInput.files[0];
+      const formData = new FormData();
+      formData.append('file', file);
+      formData.append('auto_create_inventory', 'true');
+
+      const btn = document.getElementById('shopPdfBtn');
+      btn.disabled = true;
+      btn.innerText = '⏳ Parsing & Importing PDF...';
+
+      try {
+        const res = await fetch(`${API_BASE}/api/catalog/upload-pdf`, {
+          method: 'POST',
+          body: formData
+        });
+        const data = await res.json();
+        if (res.ok) {
+          showToast(`🎉 Imported ${data.imported_count} items from "${data.filename}"!`);
+          const resBox = document.getElementById('shopPdfResults');
+          resBox.style.display = 'block';
+          document.getElementById('shopPdfResultsTitle').innerText = `✅ Successfully imported ${data.imported_count} items into shop inventory!`;
+          loadStock();
+          loadSalesDemand();
+        } else {
+          showToast(data.detail || 'PDF import failed', false);
+        }
+      } catch (err) {
+        showToast('Network error: ' + err.message, false);
+      } finally {
+        btn.disabled = false;
+        btn.innerText = '🚀 Parse & Import PDF Items to Shop';
+      }
+    }
+
+    // 3. Load and Render Product Demand Based on Sales (Graph)
+    async function loadSalesDemand() {
+      try {
+        const res = await fetch(`${API_BASE}/api/shop/sales-demand`);
+        if (!res.ok) throw new Error('Failed to load sales demand');
+        const data = await res.json();
+
+        // Update Summary Cards
+        document.getElementById('metricOrders').innerText = data.summary.total_completed_orders;
+        document.getElementById('metricUnits').innerText = data.summary.total_units_sold;
+        document.getElementById('metricRevenue').innerText = `$${data.summary.total_sales_revenue.toFixed(2)}`;
+        document.getElementById('metricTopItem').innerText = data.summary.top_demanded_product;
+
+        // Render Graph
+        renderDemandChart(data.products_demand);
+      } catch (err) {
+        console.error('Sales demand loading error:', err);
+      }
+    }
+
+    function renderDemandChart(products) {
+      const labels = products.map(p => p.item_name);
+      const units = products.map(p => p.total_units_sold);
+      const revenues = products.map(p => p.total_revenue);
+
+      const canvas = document.getElementById('salesDemandChart');
+
+      if (window.Chart && canvas) {
+        if (chartInstance) {
+          chartInstance.destroy();
+        }
+
+        const ctx = canvas.getContext('2d');
+        chartInstance = new Chart(ctx, {
+          type: 'bar',
+          data: {
+            labels: labels,
+            datasets: [
+              {
+                label: 'Units Demanded (Sold)',
+                data: units,
+                backgroundColor: 'rgba(245, 158, 11, 0.85)',
+                borderColor: '#f59e0b',
+                borderWidth: 2,
+                borderRadius: 8,
+                yAxisID: 'y'
+              },
+              {
+                label: 'Revenue Generated ($)',
+                data: revenues,
+                backgroundColor: 'rgba(16, 185, 129, 0.75)',
+                borderColor: '#10b981',
+                borderWidth: 2,
+                borderRadius: 8,
+                yAxisID: 'y1'
+              }
+            ]
+          },
+          options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+              legend: {
+                labels: { color: '#cbd5e1', font: { weight: '600' } }
+              },
+              tooltip: {
+                callbacks: {
+                  label: function(context) {
+                    if (context.datasetIndex === 0) {
+                      return `${context.dataset.label}: ${context.raw} drinks`;
+                    } else {
+                      return `${context.dataset.label}: $${Number(context.raw).toFixed(2)}`;
+                    }
+                  }
+                }
+              }
+            },
+            scales: {
+              x: {
+                ticks: { color: '#94a3b8', font: { size: 12 } },
+                grid: { color: '#1e293b' }
+              },
+              y: {
+                type: 'linear',
+                display: true,
+                position: 'left',
+                ticks: { color: '#fbbf24', stepSize: 1 },
+                grid: { color: '#1e293b' },
+                title: { display: true, text: 'Units Sold', color: '#fbbf24' }
+              },
+              y1: {
+                type: 'linear',
+                display: true,
+                position: 'right',
+                ticks: { color: '#34d399' },
+                grid: { drawOnChartArea: false },
+                title: { display: true, text: 'Revenue ($)', color: '#34d399' }
+              }
+            }
+          }
+        });
+      } else {
+        // Fallback pure HTML/CSS Bar Chart
+        renderFallbackChart(products);
+      }
+    }
+
+    function renderFallbackChart(products) {
+      const wrapper = document.getElementById('chartWrapper');
+      wrapper.style.display = 'none';
+      const fallback = document.getElementById('chartFallback');
+      fallback.style.display = 'block';
+
+      if (!products || products.length === 0) {
+        fallback.innerHTML = '<div style="text-align: center; color: #64748b; padding: 40px 0;">No sales demand data recorded yet.</div>';
+        return;
+      }
+
+      const maxUnits = Math.max(...products.map(p => p.total_units_sold), 1);
+
+      fallback.innerHTML = `
+        <div class="svg-bar-chart">
+          ${products.map(p => {
+            const pct = Math.round((p.total_units_sold / maxUnits) * 100);
+            return `
+              <div class="svg-bar-col">
+                <div class="svg-bar" style="height: ${Math.max(8, pct)}%;">
+                  <span class="svg-bar-val">${p.total_units_sold}</span>
+                </div>
+                <span class="svg-bar-label" title="${p.item_name}">${p.item_name}</span>
+              </div>
+            `;
+          }).join('')}
+        </div>
+      `;
+    }
+
+    // 4. Load and Render Products Stocks
+    async function loadStock() {
+      try {
+        const res = await fetch(`${API_BASE}/api/shop/stock`);
+        if (!res.ok) throw new Error('Failed to load stock');
+        const data = await res.json();
+        renderStockCards(data.stock);
+      } catch (err) {
+        showToast('Error loading stock from API: ' + err.message, false);
+      }
+    }
+
+    function renderStockCards(items) {
+      const grid = document.getElementById('stockGrid');
+      if (!items || items.length === 0) {
+        grid.innerHTML = `
+          <div style="grid-column: 1 / -1; text-align: center; padding: 40px 20px; background: #131d2e; border: 1px dashed #334155; border-radius: 16px;">
+            <div style="font-size: 2.8rem; margin-bottom: 8px;">📦</div>
+            <div style="font-weight: 700; color: #fff; font-size: 1.15rem;">No Inventory Items in Shop Yet</div>
+            <div style="color: #94a3b8; font-size: 0.85rem; margin-top: 6px;">
+              Use the <strong>"➕ Add Items to Shop"</strong> form above to add items via manual typing or products list PDF!
+            </div>
+          </div>
+        `;
+        return;
+      }
+
+      grid.innerHTML = items.map(item => {
+        const icon = getItemIcon(item.name);
+        const isLowOrCritical = item.calculated_status_flag !== 'OK_GREEN';
+
+
+        return `
+          <div class="card ${item.calculated_status_flag}" id="card-${item.inventory_item_id}">
+            <div>
+              <div class="card-top">
+                <span class="item-icon">${icon}</span>
+                <span class="status-pill ${item.calculated_status_flag}">
+                  ${item.calculated_status_flag.replace('_', ' ')}
+                </span>
+              </div>
+              <div class="item-title">${item.name}</div>
+              <div class="item-thresholds">
+                Low: &le;${item.low_stock_threshold} ${item.unit} &bull; Crit: &le;${item.critical_stock_threshold} ${item.unit}
+              </div>
+            </div>
+
+            <div class="stock-display">
+              <span class="stock-number" id="qty-${item.inventory_item_id}">${item.current_quantity.toFixed(2)}</span>
+              <span class="stock-unit">${item.unit}</span>
+            </div>
+
+            <div>
+              <div class="stepper-row">
+                <button class="step-btn step-minus" title="Record spill / waste decrement" onclick="debouncedAdjust(${item.inventory_item_id}, -1.00)">
+                  -1 Spill
+                </button>
+                <button class="step-btn step-plus-locked" title="Stock quantity addition restricted to supplier only" onclick="showStockAddRestriction()">
+                  <span>🔒 +1 Stock</span>
+                  <span style="font-size: 0.65rem; color: #94a3b8;">Supplier Only</span>
+                </button>
+              </div>
+
+              ${isLowOrCritical ? `
+                <button class="alert-btn" id="alert-btn-${item.inventory_item_id}" onclick="triggerSupplierAlert(${item.inventory_item_id}, '${item.name}')">
+                  🚨 Alert Supplier
+                </button>
+              ` : `
+                <button class="btn" style="width: 100%; opacity: 0.4;" onclick="triggerSupplierAlert(${item.inventory_item_id}, '${item.name}')">
+                  🔔 Request Restock
+                </button>
+              `}
+            </div>
+          </div>
+        `;
+      }).join('');
+    }
+
+    function showStockAddRestriction() {
+      showToast("🔒 Restricted: Products quantity can only be added in the database through the supplier only.", false);
+    }
+
+    // Debounce stepper clicks with 300ms threshold for spill decrement
+    function debouncedAdjust(itemId, delta) {
+      if (delta > 0) {
+        showStockAddRestriction();
+        return;
+      }
+
+      const qtyElem = document.getElementById(`qty-${itemId}`);
+      if (qtyElem) {
+        let cur = parseFloat(qtyElem.innerText) || 0;
+        let next = Math.max(0, cur + delta);
+        qtyElem.innerText = next.toFixed(2);
+      }
+
+      if (!debounceTimers[itemId]) {
+        debounceTimers[itemId] = { accumulatedDelta: 0, timer: null };
+      }
+
+      debounceTimers[itemId].accumulatedDelta += delta;
+
+      if (debounceTimers[itemId].timer) {
+        clearTimeout(debounceTimers[itemId].timer);
+      }
+
+      debounceTimers[itemId].timer = setTimeout(async () => {
+        const netDelta = debounceTimers[itemId].accumulatedDelta;
+        debounceTimers[itemId] = null;
+
+        try {
+          const res = await fetch(`${API_BASE}/api/shop/stock/adjust`, {
+            method: 'PATCH',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              inventory_item_id: itemId,
+              delta: netDelta,
+              user_id: 1
+            })
+          });
+          const result = await res.json();
+          if (res.ok) {
+            showToast(`Recorded spill/waste: ${netDelta.toFixed(2)} (New balance: ${result.item.current_quantity.toFixed(2)})`);
+            const card = document.getElementById(`card-${itemId}`);
+            if (card) {
+              card.className = `card ${result.item.calculated_status_flag}`;
+            }
+          } else {
+            showToast(result.detail || 'Adjustment error', false);
+            loadStock();
+          }
+        } catch (err) {
+          showToast('Failed to adjust stock: ' + err.message, false);
+          loadStock();
+        }
+      }, 300);
+    }
+
+    // Instant Visual Confirmation for Red "Alert Supplier"
+    async function triggerSupplierAlert(itemId, itemName) {
+      const btn = document.getElementById(`alert-btn-${itemId}`);
+      if (btn) {
+        btn.innerText = '⏳ Pinging...';
+        btn.disabled = true;
+      }
+
+      try {
+        const res = await fetch(`${API_BASE}/api/shop/restock-request`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            inventory_item_ids: [itemId],
+            user_id: 1,
+            notes: `Urgent counter tablet alert for ${itemName}`
+          })
+        });
+        const data = await res.json();
+        if (res.ok) {
+          showToast(`🚨 Supplier Alert Sent! Request #${data.request_id} created for ${itemName}`);
+          if (btn) {
+            btn.className = 'alert-btn sent';
+            btn.innerText = '✅ Dispatched to Supplier!';
+            setTimeout(() => {
+              btn.className = 'alert-btn';
+              btn.innerText = '🚨 Alert Supplier';
+              btn.disabled = false;
+            }, 3000);
+          }
+        } else {
+          showToast(data.detail || 'Alert dispatch failed', false);
+          if (btn) btn.disabled = false;
+        }
+      } catch (err) {
+        showToast('Network error: ' + err.message, false);
+        if (btn) btn.disabled = false;
+      }
+    }
+
+    // Initial load
+    onBrandChange();
+    loadStock();
+    loadSalesDemand();
+    // Auto-refresh stock & sales every 15 seconds
+    setInterval(() => {
+      loadStock();
+      loadSalesDemand();
+    }, 15000);
+
+  </script>
+</body>
+</html>
